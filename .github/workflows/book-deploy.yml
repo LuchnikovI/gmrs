@@ -21,7 +21,7 @@ jobs:
     - name: Deploy GitHub Pages
       run: |
         cd book
-        ../bin/mdbook build build
+        ../bin/mdbook build
         git worktree add gh-pages
         git config user.name "Deploy from CI"
         git config user.email ""
