@@ -1,0 +1,10 @@
+[package]
+name = "gmrs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rayon = "1.7.0"
+
+[dev-dependencies]
+rand = "0.8.5"
