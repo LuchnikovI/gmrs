@@ -90,11 +90,13 @@ where
     ///     the discrepancy between last and previous iteration messages maximal
     ///     across variables and factors is smaller than this threshold,
     ///     message passing is converged
+    /// * `parameters` - Hyper parameters of message passing
     #[inline]
     pub fn run_message_passing_parallel(
         &mut self,
         max_iterations_number: usize,
         threshold: f64,
+        parameters: F::Parameters,
     ) -> MessagePassingResult {
         let mut last_discrepancy = f64::MAX;
         for i in 0..max_iterations_number {
@@ -102,7 +104,7 @@ where
                 .factors
                 .par_iter_mut()
                 .map(|factor| {
-                    factor.eval_messages();
+                    factor.eval_messages(&parameters);
                     let max_discrepancy = factor.eval_discrepancy();
                     factor.send_messages();
                     max_discrepancy

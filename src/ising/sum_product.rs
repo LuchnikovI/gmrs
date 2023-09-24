@@ -5,20 +5,22 @@ use super::common::{IsingMessage, IsingMessagePassingType};
 pub struct SumProduct;
 
 impl IsingMessagePassingType for SumProduct {
+    type Parameters = f64;
     #[inline(always)]
     fn factor_message_update(
         message: super::common::IsingMessage,
+        prev_message: super::common::IsingMessage,
         coupling: f64,
         input_spin_magnetic_field: f64,
         output_spin_magnetic_field: f64,
+        parameters: &f64,
     ) -> super::common::IsingMessage {
         IsingMessage(
-            output_spin_magnetic_field
-                + 0.5f64
-                    * f64::ln(
-                        f64::cosh(coupling + message.0 + input_spin_magnetic_field)
-                            / f64::cosh(-coupling + message.0 + input_spin_magnetic_field),
-                    ),
+                (1f64 - parameters) * (output_spin_magnetic_field
+                + 0.5f64 * f64::ln(
+                        f64::cosh( coupling + message.0 + input_spin_magnetic_field) /
+                        f64::cosh(-coupling + message.0 + input_spin_magnetic_field)
+                )) + parameters * prev_message.0
         )
     }
 
@@ -36,10 +38,5 @@ impl IsingMessagePassingType for SumProduct {
     fn marginal(messages: &[IsingMessage]) -> f64 {
         let sum_all: f64 = messages.iter().map(|x| x.0).sum();
         sum_all
-    }
-
-    #[inline(always)]
-    fn message_init() -> IsingMessage {
-        IsingMessage(0f64)
     }
 }

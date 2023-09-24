@@ -24,6 +24,7 @@ impl Message for FakeMessage {
 
 impl Factor for FakeFactor {
     type Message = FakeMessage;
+    type Parameters = ();
 
     #[inline(always)]
     fn degree(&self) -> usize {
@@ -31,7 +32,7 @@ impl Factor for FakeFactor {
     }
 
     #[inline(always)]
-    fn send_messages(&self, _: &[Self::Message], _: &mut [Self::Message]) {
+    fn send_messages(&self, _: &[Self::Message], _: &mut [Self::Message], _: &()) {
         unimplemented!()
     }
 }

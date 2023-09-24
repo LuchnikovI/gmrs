@@ -137,13 +137,15 @@ where
             } else {
                 return Err(FGBuilderError::OutOfRangeVariable(variables.len(), *index));
             };
+            let factor_message = message_initializer();
+            let variable_message = message_initializer();
             last_factor.senders.push(null_mut());
-            last_factor.receivers.push(message_initializer());
-            last_factor.messages.push(message_initializer());
+            last_factor.receivers.push(factor_message);
+            last_factor.messages.push(variable_message);
             last_factor.var_node_indices.push(*index);
             variable.senders.push(null_mut());
-            variable.messages.push(message_initializer());
-            variable.receivers.push(message_initializer());
+            variable.messages.push(factor_message);
+            variable.receivers.push(variable_message);
             variable.fac_node_indices.push(factors_number - 1);
             let variable_recivers_number = variable.receivers.len();
             let factor_recivers_number = last_factor.receivers.len();

@@ -58,9 +58,9 @@ where
     }
 
     #[inline(always)]
-    pub(super) fn eval_messages(&mut self) {
+    pub(super) fn eval_messages(&mut self, parameters: &F::Parameters) {
         self.factor
-            .send_messages(&self.receivers, &mut self.messages)
+            .send_messages(&self.receivers, &mut self.messages, parameters)
     }
 
     #[inline(always)]
