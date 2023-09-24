@@ -51,10 +51,9 @@ fn main() {
     // Averaged single spin distribution
     let mut approx_distr = [0f64; 2];
     marginals.iter().for_each(|x| {
-            approx_distr[0] += x[0];
-            approx_distr[1] += x[1];
-        }
-    );
+        approx_distr[0] += x[0];
+        approx_distr[1] += x[1];
+    });
     approx_distr[0] /= spins_number as f64;
     approx_distr[1] /= spins_number as f64;
     // Exact single spin distribution

@@ -1,6 +1,6 @@
+use super::utils::field2prob;
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::thread_rng;
-use super::utils::field2prob;
 
 fn exact_curie_weiss_up_prob(coupling: f64, magnetic_field: f64, error: f64) -> f64 {
     let f = |x| f64::tanh(coupling * x + magnetic_field);
