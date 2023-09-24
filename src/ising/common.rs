@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::core::{Factor, Message, Variable, FactorGraphBuilder};
+use crate::core::{Factor, FactorGraphBuilder, Message, Variable};
 use std::{fmt::Debug, marker::PhantomData};
 
 // ------------------------------------------------------------------------------------------
@@ -91,7 +91,12 @@ where
     }
 
     #[inline(always)]
-    fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message], parameters: &T::Parameters) {
+    fn send_messages(
+        &self,
+        src: &[Self::Message],
+        dst: &mut [Self::Message],
+        parameters: &T::Parameters,
+    ) {
         unsafe {
             let prev_message = *dst.get_unchecked(1);
             *dst.get_unchecked_mut(1) = T::factor_message_update(
@@ -168,9 +173,6 @@ where
 /// # Arguments
 ///
 /// * `rng` - A thread-local generator of random numbers
-pub fn random_message_initializer(
-    mut rng: impl Rng,
-) -> impl FnMut() -> IsingMessage
-{
-    move || { IsingMessage(2f64 * (rng.gen::<f64>() - 0.5f64)) }
+pub fn random_message_initializer(mut rng: impl Rng) -> impl FnMut() -> IsingMessage {
+    move || IsingMessage(2f64 * (rng.gen::<f64>() - 0.5f64))
 }

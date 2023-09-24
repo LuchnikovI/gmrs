@@ -1,7 +1,10 @@
-use crate::ising::{SumProduct, IsingFactor, new_ising_builder, random_message_initializer};
+use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::{rngs::StdRng, SeedableRng};
 fn exact_magnetization(coupling: f64) -> f64 {
-    f64::powf(1f64 - f64::powf(f64::sinh(2f64 * coupling), -4f64), 1f64 / 8f64)
+    f64::powf(
+        1f64 - f64::powf(f64::sinh(2f64 * coupling), -4f64),
+        1f64 / 8f64,
+    )
 }
 
 #[test]
@@ -13,26 +16,27 @@ fn ising_2d_test() {
     let decay = 0.5;
     let rng = StdRng::seed_from_u64(42);
     let mut initializer = random_message_initializer(rng);
-    let mut fgb = new_ising_builder::<SumProduct>(
-        size * size,
-        2 * size * size,
-    );
+    let mut fgb = new_ising_builder::<SumProduct>(size * size, 2 * size * size);
     for i in 0..size {
         for j in 0..size {
             fgb.add_factor(
                 IsingFactor::new(coupling, magnetic_fields / 4., magnetic_fields / 4.),
                 &[j + i * size, (j + 1) % size + i * size],
                 &mut initializer,
-            ).unwrap();
+            )
+            .unwrap();
             fgb.add_factor(
                 IsingFactor::new(coupling, magnetic_fields / 4., magnetic_fields / 4.),
                 &[j + i * size, j + ((i + 1) % size) * size],
                 &mut initializer,
-            ).unwrap();
+            )
+            .unwrap();
         }
     }
     let mut fg = fgb.build();
-    let _ = fg.run_message_passing_parallel(10000, error, decay).unwrap();
+    let _ = fg
+        .run_message_passing_parallel(10000, error, decay)
+        .unwrap();
     let marginals = fg.eval_marginals();
     let calculated_m = marginals[0];
     let m = exact_magnetization(coupling);

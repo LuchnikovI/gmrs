@@ -1,6 +1,6 @@
 use rand::thread_rng;
 
-use crate::ising::{SumProduct, IsingFactor, new_ising_builder, random_message_initializer};
+use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 
 fn exact_infinite_ising_1d_magnetization(
     coupling: f64,
@@ -50,6 +50,14 @@ fn ising_1d_test() {
         exact_infinite_ising_1d_magnetization(coupling, magnetic_field, error);
     let calculated_mid_spin = f64::tanh(marginals[spins_number / 2 + 1]);
     let calculated_bound_spin = f64::tanh(marginals[0]);
-    assert!((exact_mid_spin - calculated_mid_spin).abs() < error * 10f64, "Error amplitude: {}", (exact_mid_spin - calculated_mid_spin).abs());
-    assert!((exact_bound_spin - calculated_bound_spin).abs() < error * 10f64, "Error amplitude: {}", (exact_bound_spin - calculated_bound_spin).abs());
+    assert!(
+        (exact_mid_spin - calculated_mid_spin).abs() < error * 10f64,
+        "Error amplitude: {}",
+        (exact_mid_spin - calculated_mid_spin).abs()
+    );
+    assert!(
+        (exact_bound_spin - calculated_bound_spin).abs() < error * 10f64,
+        "Error amplitude: {}",
+        (exact_bound_spin - calculated_bound_spin).abs()
+    );
 }

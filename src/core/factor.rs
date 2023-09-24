@@ -25,5 +25,10 @@ pub trait Factor: Debug + Send {
     /// src[1] corresponds to the message received from the second variable,
     /// dst[1] corresponds to the message receiver of the second variable,
     /// etc
-    fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message], parameters: &Self::Parameters);
+    fn send_messages(
+        &self,
+        src: &[Self::Message],
+        dst: &mut [Self::Message],
+        parameters: &Self::Parameters,
+    );
 }

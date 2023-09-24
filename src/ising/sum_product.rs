@@ -16,11 +16,14 @@ impl IsingMessagePassingType for SumProduct {
         parameters: &f64,
     ) -> super::common::IsingMessage {
         IsingMessage(
-                (1f64 - parameters) * (output_spin_magnetic_field
-                + 0.5f64 * f64::ln(
-                        f64::cosh( coupling + message.0 + input_spin_magnetic_field) /
-                        f64::cosh(-coupling + message.0 + input_spin_magnetic_field)
-                )) + parameters * prev_message.0
+            (1f64 - parameters)
+                * (output_spin_magnetic_field
+                    + 0.5f64
+                        * f64::ln(
+                            f64::cosh(coupling + message.0 + input_spin_magnetic_field)
+                                / f64::cosh(-coupling + message.0 + input_spin_magnetic_field),
+                        ))
+                + parameters * prev_message.0,
         )
     }
 
