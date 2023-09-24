@@ -47,17 +47,11 @@ fn main() {
         .unwrap();
     println!("{}", info);
     // All marginal probabilities of a spin being in up position
-    let marginals = fg.eval_marginals(); 
+    let marginals = fg.eval_marginals();
     // Averaged over all spins probability to be in the up position
-    let p_up_approx = marginals.iter().map(|x| *x).sum::<f64>() / spins_number as f64;
+    let p_up_approx = marginals.iter().copied().sum::<f64>() / spins_number as f64;
     // Exact up probability
     let p_up_exact = f64::tanh(magnetic_field);
-    println!(
-        "Approximate average spin: {}",
-        2f64 * p_up_approx - 1f64,
-    );
-    println!(
-        "Exact average spin: {}",
-        2f64 * p_up_exact - 1f64,
-    );
+    println!("Approximate average spin: {}", 2f64 * p_up_approx - 1f64,);
+    println!("Exact average spin: {}", 2f64 * p_up_exact - 1f64,);
 }
