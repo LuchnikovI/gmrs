@@ -6,6 +6,8 @@ pub trait Factor: Debug + Send {
     type Message: Message;
     /// Message passing hyper parameters
     type Parameters: Sync;
+    /// Type representing a marginal distribution
+    type Marginal;
 
     /// Returns a degree of a factor (number of adjoint variables)
     fn degree(&self) -> usize;
@@ -31,4 +33,11 @@ pub trait Factor: Debug + Send {
         dst: &mut [Self::Message],
         parameters: &Self::Parameters,
     );
+
+    /// Computes a marginal of a factor
+    ///
+    /// # Arguments
+    ///
+    /// * `messages` - Messages received from adjoint variables previously
+    fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal;
 }

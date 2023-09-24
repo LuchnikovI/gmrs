@@ -1,7 +1,7 @@
+use crate::core::{Factor, FactorGraphBuilder, Message, Variable};
+use ndarray::{Array1, Array2};
 use rand::Rng;
 use rand_distr::{Distribution, Uniform};
-
-use crate::core::{Factor, FactorGraphBuilder, Message, Variable};
 use std::{fmt::Debug, marker::PhantomData};
 
 // ------------------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ pub trait IsingMessagePassingType {
 
     fn variable_message_update(src: &[IsingMessage], dst: &mut [IsingMessage]);
 
-    fn marginal(messages: &[IsingMessage]) -> f64;
+    fn marginal(messages: &[IsingMessage]) -> Array1<f64>;
 }
 
 // ------------------------------------------------------------------------------------------
@@ -85,6 +85,7 @@ where
 {
     type Message = IsingMessage;
     type Parameters = T::Parameters;
+    type Marginal = Array2<f64>;
 
     #[inline(always)]
     fn degree(&self) -> usize {
@@ -119,6 +120,11 @@ where
             );
         }
     }
+
+    #[inline(always)]
+    fn marginal(&self, _: &[Self::Message]) -> Self::Marginal {
+        todo!()
+    }
 }
 
 // ------------------------------------------------------------------------------------------
@@ -131,7 +137,7 @@ where
     T: IsingMessagePassingType + Debug + Send,
 {
     type Message = IsingMessage;
-    type Marginal = f64;
+    type Marginal = Array1<f64>;
 
     #[inline(always)]
     fn new() -> Self {

@@ -42,6 +42,11 @@ where
     }
 
     #[inline(always)]
+    pub(super) fn degree(&self) -> usize {
+        self.factor.degree()
+    }
+
+    #[inline(always)]
     pub(super) fn init_senders(&mut self, variables: &mut [VariableNode<V, F>]) {
         let indices_iter = self
             .var_node_indices

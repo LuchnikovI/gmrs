@@ -1,7 +1,8 @@
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::thread_rng;
+use super::utils::field2prob;
 
-fn exact_curie_weiss_magnetization(coupling: f64, magnetic_field: f64, error: f64) -> f64 {
+fn exact_curie_weiss_up_prob(coupling: f64, magnetic_field: f64, error: f64) -> f64 {
     let f = |x| f64::tanh(coupling * x + magnetic_field);
     let mut old_u = f64::MAX;
     let mut new_u = f64::MIN;
@@ -9,7 +10,7 @@ fn exact_curie_weiss_magnetization(coupling: f64, magnetic_field: f64, error: f6
         old_u = new_u;
         new_u = f(old_u);
     }
-    new_u
+    field2prob(f64::atanh(new_u))
 }
 
 #[test]
@@ -40,6 +41,6 @@ fn curie_weiss_test() {
         .run_message_passing_parallel(10000, error, decay)
         .unwrap();
     let marginals = fg.eval_marginals();
-    let exact = exact_curie_weiss_magnetization(coupling, magnetic_field, error);
-    assert!((f64::atanh(marginals[23]) - f64::atanh(exact)).abs() < 0.02);
+    let exact_up_prob = exact_curie_weiss_up_prob(coupling, magnetic_field, error);
+    assert!((marginals[size / 2][0] - exact_up_prob).abs() < 1e-3);
 }

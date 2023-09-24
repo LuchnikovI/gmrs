@@ -1,16 +1,19 @@
+use super::utils::field2prob;
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::{rngs::StdRng, SeedableRng};
-fn exact_magnetization(coupling: f64) -> f64 {
-    f64::powf(
+
+fn exact_up_probability(coupling: f64) -> f64 {
+    let spin = f64::powf(
         1f64 - f64::powf(f64::sinh(2f64 * coupling), -4f64),
         1f64 / 8f64,
-    )
+    );
+    field2prob(f64::atanh(spin))
 }
 
 #[test]
 fn ising_2d_test() {
     let size = 20;
-    let coupling = -1.7;
+    let coupling = -0.7123;
     let magnetic_fields = 0.;
     let error = 1e-10f64;
     let decay = 0.5;
@@ -38,12 +41,19 @@ fn ising_2d_test() {
         .run_message_passing_parallel(10000, error, decay)
         .unwrap();
     let marginals = fg.eval_marginals();
-    let calculated_m = marginals[0];
-    let m = exact_magnetization(coupling);
+    let calculated_up_prob = if marginals[0][0] > marginals[0][1] {
+        marginals[0][0]
+    } else {
+        marginals[0][1]
+    };
+    let exact_up_prob = exact_up_probability(coupling);
     for i in 0..size {
         for j in 0..size {
-            assert!((marginals[size * i + j] + marginals[size * i + (j + 1) % size]).abs() < 1e-5);
+            assert!(
+                (marginals[size * i + j][0] + marginals[size * i + (j + 1) % size][0] - 1f64).abs()
+                    < 1e-5
+            );
         }
     }
-    assert!((f64::atanh(calculated_m.abs()) - f64::atanh(m)).abs() < 1e-4);
+    assert!((calculated_up_prob - exact_up_prob).abs() < 1e-4);
 }

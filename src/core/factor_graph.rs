@@ -81,6 +81,19 @@ where
     F: Factor,
     V: Variable<Message = F::Message>,
 {
+    /// Returns degree (number of adjoint factors) of each variable
+    #[inline]
+    pub fn get_variable_degrees(&self) -> Vec<usize> {
+        self.variables.iter().map(|x| x.degree()).collect()
+    }
+
+    /// Returns degree (number of adjoint factors) of each factor
+    /// in order they were added to a factor graph
+    #[inline]
+    pub fn get_factors_degrees(&self) -> Vec<usize> {
+        self.factors.iter().map(|x| x.degree()).collect()
+    }
+
     /// Runs a message passing algorithm in parallel
     ///
     /// # Arguments

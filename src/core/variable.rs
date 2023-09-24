@@ -2,7 +2,9 @@ use crate::core::message::Message;
 use std::fmt::Debug;
 
 pub trait Variable: Debug + Send {
+    /// Message type
     type Message: Message;
+    /// Type representing a marginal distribution
     type Marginal;
 
     /// Create a new variable instance

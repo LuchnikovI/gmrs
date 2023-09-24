@@ -24,11 +24,17 @@ impl Message for FakeMessage {
 
 impl Factor for FakeFactor {
     type Message = FakeMessage;
+    type Marginal = ();
     type Parameters = ();
 
     #[inline(always)]
     fn degree(&self) -> usize {
         self.0
+    }
+
+    #[inline(always)]
+    fn marginal(&self, _: &[Self::Message]) -> Self::Marginal {
+        unimplemented!()
     }
 
     #[inline(always)]

@@ -7,7 +7,7 @@ fn main() {
     // number of spins in SK model
     let spins_number = 2000;
     // magnetic field per spin
-    let magnetic_field = 1.789;
+    let magnetic_field = 0.89;
     // error threshold specifying message passing stopping criterion
     let error = 1e-10f64;
     // decay parameter (a hyper parameter of a sum-product algorithm)
@@ -46,12 +46,22 @@ fn main() {
         .run_message_passing_parallel(max_iter, error, decay)
         .unwrap();
     println!("{}", info);
-    // All marginal probabilities of a spin being in up position
+    // Marginal distributions for each spin
     let marginals = fg.eval_marginals();
-    // Averaged over all spins probability to be in the up position
-    let p_up_approx = marginals.iter().copied().sum::<f64>() / spins_number as f64;
-    // Exact up probability
-    let p_up_exact = f64::tanh(magnetic_field);
-    println!("Approximate average spin: {}", 2f64 * p_up_approx - 1f64,);
-    println!("Exact average spin: {}", 2f64 * p_up_exact - 1f64,);
+    // Averaged single spin distribution
+    let mut approx_distr = [0f64; 2];
+    marginals.iter().for_each(|x| {
+            approx_distr[0] += x[0];
+            approx_distr[1] += x[1];
+        }
+    );
+    approx_distr[0] /= spins_number as f64;
+    approx_distr[1] /= spins_number as f64;
+    // Exact single spin distribution
+    let exact_distr = [
+        f64::exp(2f64 * magnetic_field) / (1f64 + f64::exp(2f64 * magnetic_field)),
+        1f64 / (1f64 + f64::exp(2f64 * magnetic_field)),
+    ];
+    println!("Approximate single spin distribution: {:?}", approx_distr);
+    println!("Exact single spin distribution: {:?}", exact_distr);
 }

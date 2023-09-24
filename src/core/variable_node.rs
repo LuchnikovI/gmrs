@@ -43,6 +43,11 @@ where
     }
 
     #[inline(always)]
+    pub(super) fn degree(&self) -> usize {
+        self.receivers.len()
+    }
+
+    #[inline(always)]
     pub(super) fn init_senders(&mut self, factors: &mut [FactorNode<F, V>]) {
         let indices_iter = self
             .fac_node_indices

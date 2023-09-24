@@ -21,7 +21,7 @@ Next, we define parameters of a problem:
 // Number of spins in SK model
 let spins_number = 2000;
 // magnetic field per spin
-let magnetic_field = 1.789;
+let magnetic_field = 0.89;
 // Error threshold specifying message passing stopping criterion
 let error = 1e-10f64;
 // Decay parameter (a hyper parameter of a sum-product algorithm)
@@ -78,23 +78,27 @@ Before we go further, let us discuss what happens under the hood. `.run_message_
 
 where \\( \gamma \\) is the dumping parameter introduced in the code above, it stabilizes algorithm by smoothing the update. This trick with damping sometimes also called _exponential moving average_.
 
-After the convergence of the message passing algorithm, we can start extracting information about the system in the thermodynamic equilibrium. The simplest quantity that we can compute is the average spin over all the system's spins. The exact value of the average spin also averaged over all realizations is simple \\( \langle s \rangle = 1\cdot p_\uparrow + (-1)\cdot(1 - p_\uparrow) = 2p_\uparrow - 1 \\), where \\( p_\uparrow = {\rm tanh}(B) \\) is the average probability to have a spin in the up position. Converged messages allow us to calculate all the marginal distributions of all spins. In particular, a method `.eval_marginals` of a factor graph computes marginal probability of a spin being in the up state for all spins. Averaging this probability across all the spins and bearing in mind the self-averaging argument, we get an estimate of \\( p_\uparrow \\) and an estimate of \\( \langle s \rangle \\). The corresponding code is given below:
+After the convergence of the message passing algorithm, we can start extracting information about the system in the thermodynamic equilibrium. The simplest thing that we can calculate is the averaged single spin marginal probability distribution, i.e. a probability vector \\( \begin{pmatrix} p_{\uparrow} \\\\ p_\downarrow \end{pmatrix} \\). Averaging is performed over all spins in the system and over all realizations of SK model. Exact elements of the probability vector are known and read \\( p_{\uparrow} = \frac{\exp(2B)}{\exp(2B) + 1} \\) and \\( p_{\downarrow} = \frac{1}{\exp(2B) + 1} \\). Message passing based approximation of the probability vector can be calculated using a single realization of the SK model due to the self-averaging property. One can do this in two steps: (1) calculate marginal distributions for each spin using `.eval_marginals` method of a factor graph, (2) take an average of all the marginal distributions getting the desirable approximate. The code below does these two steps, computes the exact probability vector and prints both vectors to compare them:
 ```rust
-// All marginal probabilities of a spin being in up position
-let marginals = fg.eval_marginals(); 
-// Averaged over all spins probability to be in the up position
-let p_up_approx = marginals.iter().map(|x| *x).sum::<f64>() / spins_number as f64;
-// Exact up probability
-let p_up_exact = f64::tanh(magnetic_field);
-println!(
-    "Approximate average spin: {}",
-    2f64 * p_up_approx - 1f64,
+// Marginal distributions for each spin
+let marginals = fg.eval_marginals();
+// Averaged single spin distribution
+let mut approx_distr = [0f64; 2];
+marginals.iter().for_each(|x| {
+        approx_distr[0] += x[0];
+        approx_distr[1] += x[1];
+    }
 );
-println!(
-    "Exact average spin: {}",
-    2f64 * p_up_exact - 1f64,
-);
+approx_distr[0] /= spins_number as f64;
+approx_distr[1] /= spins_number as f64;
+// Exact single spin distribution
+let exact_distr = [
+    f64::exp(2f64 * magnetic_field) / (1f64 + f64::exp(2f64 * magnetic_field)),
+    1f64 / (1f64 + f64::exp(2f64 * magnetic_field)),
+];
+println!("Approximate single spin distribution: {:?}", approx_distr);
+println!("Exact single spin distribution: {:?}", exact_distr);
 ```
-This code prints the exact and estimated values of \\( \langle s \rangle \\), one can see, that those values are very close.
+One can note, that the message passing based approximation gives a very accurate estimation of the single spin marginal distribution.
 
 !!!To be continued!!!

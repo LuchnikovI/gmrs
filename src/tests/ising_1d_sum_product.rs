@@ -1,6 +1,6 @@
-use rand::thread_rng;
-
+use super::utils::field2prob;
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
+use rand::thread_rng;
 
 fn exact_infinite_ising_1d_magnetization(
     coupling: f64,
@@ -15,8 +15,8 @@ fn exact_infinite_ising_1d_magnetization(
         new_u = f(old_u + magnetic_field / coupling);
     }
     (
-        f64::tanh(2f64 * coupling * new_u + magnetic_field),
-        f64::tanh(coupling * new_u + magnetic_field),
+        field2prob(2f64 * coupling * new_u + magnetic_field),
+        field2prob(coupling * new_u + magnetic_field),
     )
 }
 
@@ -46,18 +46,18 @@ fn ising_1d_test() {
     let mut fg = fgb.build();
     let _ = fg.run_message_passing_parallel(1000, error, decay).unwrap();
     let marginals = fg.eval_marginals();
-    let (exact_mid_spin, exact_bound_spin) =
+    let (exact_mid_spin_prob_up, exact_bound_spin_prob_up) =
         exact_infinite_ising_1d_magnetization(coupling, magnetic_field, error);
-    let calculated_mid_spin = marginals[spins_number / 2 + 1];
-    let calculated_bound_spin = marginals[0];
+    let calculated_mid_spin_prob_up = marginals[spins_number / 2 + 1][0];
+    let calculated_bound_spin_prob_up = marginals[0][0];
     assert!(
-        (exact_mid_spin - calculated_mid_spin).abs() < error * 10f64,
+        (exact_mid_spin_prob_up - calculated_mid_spin_prob_up).abs() < error * 10f64,
         "Error amplitude: {}",
-        (exact_mid_spin - calculated_mid_spin).abs()
+        (exact_mid_spin_prob_up - calculated_mid_spin_prob_up).abs()
     );
     assert!(
-        (exact_bound_spin - calculated_bound_spin).abs() < error * 10f64,
+        (exact_bound_spin_prob_up - calculated_bound_spin_prob_up).abs() < error * 10f64,
         "Error amplitude: {}",
-        (exact_bound_spin - calculated_bound_spin).abs()
+        (exact_bound_spin_prob_up - calculated_bound_spin_prob_up).abs()
     );
 }

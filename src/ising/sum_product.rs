@@ -1,4 +1,5 @@
 use super::common::{IsingMessage, IsingMessagePassingType};
+use ndarray::Array1;
 
 /// Sum product type of message passing
 #[derive(Debug, Clone, Copy)]
@@ -38,8 +39,9 @@ impl IsingMessagePassingType for SumProduct {
     }
 
     #[inline(always)]
-    fn marginal(messages: &[IsingMessage]) -> f64 {
+    fn marginal(messages: &[IsingMessage]) -> Array1<f64> {
         let sum_all: f64 = messages.iter().map(|x| x.0).sum();
-        f64::tanh(sum_all)
+        let p_down = 1f64 / (f64::exp(2f64 * sum_all) + 1f64);
+        Array1::from_vec(vec![1f64 - p_down, p_down])
     }
 }
