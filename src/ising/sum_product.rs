@@ -40,6 +40,6 @@ impl IsingMessagePassingType for SumProduct {
     #[inline(always)]
     fn marginal(messages: &[IsingMessage]) -> f64 {
         let sum_all: f64 = messages.iter().map(|x| x.0).sum();
-        sum_all
+        f64::tanh(sum_all)
     }
 }

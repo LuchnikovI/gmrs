@@ -48,8 +48,8 @@ fn ising_1d_test() {
     let marginals = fg.eval_marginals();
     let (exact_mid_spin, exact_bound_spin) =
         exact_infinite_ising_1d_magnetization(coupling, magnetic_field, error);
-    let calculated_mid_spin = f64::tanh(marginals[spins_number / 2 + 1]);
-    let calculated_bound_spin = f64::tanh(marginals[0]);
+    let calculated_mid_spin = marginals[spins_number / 2 + 1];
+    let calculated_bound_spin = marginals[0];
     assert!(
         (exact_mid_spin - calculated_mid_spin).abs() < error * 10f64,
         "Error amplitude: {}",

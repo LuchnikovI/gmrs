@@ -1,4 +1,5 @@
 use rand::Rng;
+use rand_distr::{Distribution, Uniform};
 
 use crate::core::{Factor, FactorGraphBuilder, Message, Variable};
 use std::{fmt::Debug, marker::PhantomData};
@@ -174,5 +175,6 @@ where
 ///
 /// * `rng` - A thread-local generator of random numbers
 pub fn random_message_initializer(mut rng: impl Rng) -> impl FnMut() -> IsingMessage {
-    move || IsingMessage(2f64 * (rng.gen::<f64>() - 0.5f64))
+    let distr = Uniform::new(-1f64, 1f64);
+    move || IsingMessage(distr.sample(&mut rng))
 }

@@ -45,5 +45,5 @@ fn ising_2d_test() {
             assert!((marginals[size * i + j] + marginals[size * i + (j + 1) % size]).abs() < 1e-5);
         }
     }
-    assert!((calculated_m.abs() - f64::atanh(m)).abs() < 1e-4);
+    assert!((f64::atanh(calculated_m.abs()) - f64::atanh(m)).abs() < 1e-4);
 }

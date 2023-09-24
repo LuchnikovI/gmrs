@@ -1,1 +1,2 @@
-This book is a user guide on how to use `gmrs` library
+This book contains usage examples and guides for `gmrs` library.
+The library GitHub repo is available via the [link](https://github.com/LuchnikovI/gmrs)

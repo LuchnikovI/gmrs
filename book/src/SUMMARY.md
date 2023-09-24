@@ -2,7 +2,12 @@
 
 [Introduction](README.md)
 
-# User Guide
+# Examples
 
-- [Message passing in Ising model](guide/mp_ising.md)
-- [How to develop a custom message passing algorithm](guide/mp_custom.md)
+- [Sum-product message passing: Sherrington Kirkpatrick model](guide/sk_example.md)
+- [Max-product message passing: maximum cut problem]()
+- [Survey propagation: boolean satisfiability problem]()
+
+# Guides
+
+- [How to develop a custom message passing algorithm]()

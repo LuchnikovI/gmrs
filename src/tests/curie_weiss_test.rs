@@ -41,5 +41,5 @@ fn curie_weiss_test() {
         .unwrap();
     let marginals = fg.eval_marginals();
     let exact = exact_curie_weiss_magnetization(coupling, magnetic_field, error);
-    assert!((marginals[23] - f64::atanh(exact)).abs() < 0.02);
+    assert!((f64::atanh(marginals[23]) - f64::atanh(exact)).abs() < 0.02);
 }
