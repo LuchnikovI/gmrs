@@ -40,4 +40,12 @@ pub trait Factor: Debug + Send {
     ///
     /// * `messages` - Messages received from adjoint variables previously
     fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal;
+
+    /// Returns a factor as a standalone object
+    ///
+    /// # Notes
+    ///
+    /// The most natural data structure representing a standalone factor
+    /// is that used to represent a marginal
+    fn factor(&self) -> Self::Marginal;
 }

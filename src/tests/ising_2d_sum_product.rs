@@ -40,17 +40,20 @@ fn ising_2d_test() {
     let _ = fg
         .run_message_passing_parallel(10000, error, decay)
         .unwrap();
-    let marginals = fg.eval_marginals();
-    let calculated_up_prob = if marginals[0][0] > marginals[0][1] {
-        marginals[0][0]
+    let variable_marginals = fg.variable_marginals();
+    let calculated_up_prob = if variable_marginals[0][0] > variable_marginals[0][1] {
+        variable_marginals[0][0]
     } else {
-        marginals[0][1]
+        variable_marginals[0][1]
     };
     let exact_up_prob = exact_up_probability(coupling);
     for i in 0..size {
         for j in 0..size {
             assert!(
-                (marginals[size * i + j][0] + marginals[size * i + (j + 1) % size][0] - 1f64).abs()
+                (variable_marginals[size * i + j][0]
+                    + variable_marginals[size * i + (j + 1) % size][0]
+                    - 1f64)
+                    .abs()
                     < 1e-5
             );
         }

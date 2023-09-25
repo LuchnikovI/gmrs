@@ -86,4 +86,14 @@ where
             unsafe { **dst_ptr = *msg }
         }
     }
+
+    #[inline(always)]
+    pub(super) fn marginal(&self) -> F::Marginal {
+        self.factor.marginal(&self.receivers)
+    }
+
+    #[inline(always)]
+    pub(super) fn factor(&self) -> F::Marginal {
+        self.factor.factor()
+    }
 }

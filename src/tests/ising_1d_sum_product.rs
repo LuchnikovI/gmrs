@@ -20,10 +20,20 @@ fn exact_infinite_ising_1d_magnetization(
     )
 }
 
+fn exact_free_entropy(coupling: f64, magnetic_field: f64) -> f64 {
+    f64::ln(
+        f64::exp(coupling) * f64::cosh(magnetic_field)
+            + f64::sqrt(
+                f64::exp(2f64 * coupling) * f64::sinh(magnetic_field).powf(2f64)
+                    + f64::exp(-2f64 * coupling),
+            ),
+    )
+}
+
 #[test]
 fn ising_1d_test() {
     let spins_number = 101;
-    let coupling = 1f64;
+    let coupling = 1.1f64;
     let magnetic_field = 0.3f64;
     let error = 1e-10f64;
     let decay = 0f64;
@@ -45,11 +55,11 @@ fn ising_1d_test() {
     }
     let mut fg = fgb.build();
     let _ = fg.run_message_passing_parallel(1000, error, decay).unwrap();
-    let marginals = fg.eval_marginals();
+    let variable_marginals = fg.variable_marginals();
     let (exact_mid_spin_prob_up, exact_bound_spin_prob_up) =
         exact_infinite_ising_1d_magnetization(coupling, magnetic_field, error);
-    let calculated_mid_spin_prob_up = marginals[spins_number / 2 + 1][0];
-    let calculated_bound_spin_prob_up = marginals[0][0];
+    let calculated_mid_spin_prob_up = variable_marginals[spins_number / 2 + 1][0];
+    let calculated_bound_spin_prob_up = variable_marginals[0][0];
     assert!(
         (exact_mid_spin_prob_up - calculated_mid_spin_prob_up).abs() < error * 10f64,
         "Error amplitude: {}",
@@ -59,5 +69,16 @@ fn ising_1d_test() {
         (exact_bound_spin_prob_up - calculated_bound_spin_prob_up).abs() < error * 10f64,
         "Error amplitude: {}",
         (exact_bound_spin_prob_up - calculated_bound_spin_prob_up).abs()
+    );
+    let factors = fg.factors();
+    let factor_marginals = fg.factor_marginals();
+    let mut bethe_free_entropy = 0f64;
+    let fm = &factor_marginals[spins_number / 2];
+    let f = &factors[spins_number / 2];
+    let vm = &variable_marginals[spins_number / 2];
+    bethe_free_entropy -= (fm * (fm / f).mapv(f64::ln)).sum();
+    bethe_free_entropy += (vm * vm.mapv(f64::ln)).sum();
+    assert!(
+        (bethe_free_entropy - exact_free_entropy(coupling, magnetic_field)).abs() < error * 10f64
     );
 }

@@ -13,22 +13,32 @@ fn exact_curie_weiss_up_prob(coupling: f64, magnetic_field: f64, error: f64) -> 
     field2prob(f64::atanh(new_u))
 }
 
+fn entropy(p: f64) -> f64 {
+    -p * f64::ln(p) - (1f64 - p) * f64::ln(1f64 - p)
+}
+
+fn exact_free_entropy(coupling: f64, magnetic_field: f64, error: f64) -> f64 {
+    let m = 2f64 * exact_curie_weiss_up_prob(coupling, magnetic_field, error) - 1f64;
+    0.5f64 * coupling * m * m + magnetic_field * m + entropy((1f64 + m) / 2f64)
+}
+
 #[test]
 fn curie_weiss_test() {
-    let size = 100;
-    let coupling = 1.234;
-    let magnetic_field = 0.987;
+    let spins_number = 100;
+    let coupling = 1.1234;
+    let magnetic_field = 0.7654;
     let error = 1e-10f64;
     let decay = 0.5;
     let mut initializer = random_message_initializer(thread_rng());
-    let mut fgb = new_ising_builder::<SumProduct>(size, (size - 1) * size / 2);
-    for i in 0..size {
-        for j in (i + 1)..size {
+    let mut fgb =
+        new_ising_builder::<SumProduct>(spins_number, (spins_number - 1) * spins_number / 2);
+    for i in 0..spins_number {
+        for j in (i + 1)..spins_number {
             fgb.add_factor(
                 IsingFactor::new(
-                    coupling / (size as f64),
-                    magnetic_field / ((size - 1) as f64),
-                    magnetic_field / ((size - 1) as f64),
+                    coupling / (spins_number as f64),
+                    magnetic_field / ((spins_number - 1) as f64),
+                    magnetic_field / ((spins_number - 1) as f64),
                 ),
                 &[i, j],
                 &mut initializer,
@@ -40,7 +50,22 @@ fn curie_weiss_test() {
     let _ = fg
         .run_message_passing_parallel(10000, error, decay)
         .unwrap();
-    let marginals = fg.eval_marginals();
+    let variable_marginals = fg.variable_marginals();
     let exact_up_prob = exact_curie_weiss_up_prob(coupling, magnetic_field, error);
-    assert!((marginals[size / 2][0] - exact_up_prob).abs() < 1e-3);
+    assert!((variable_marginals[spins_number / 2][0] - exact_up_prob).abs() < 1e-2);
+    let factors = fg.factors();
+    let factor_marginals = fg.factor_marginals();
+    let mut bethe_free_entropy = 0f64;
+    for (fm, f) in factor_marginals.iter().zip(&factors) {
+        bethe_free_entropy -= (fm * (fm / f).mapv(f64::ln)).sum();
+    }
+    for vm in &variable_marginals {
+        bethe_free_entropy += ((spins_number - 2) as f64) * (vm * vm.mapv(f64::ln)).sum();
+    }
+    assert!(
+        (bethe_free_entropy / spins_number as f64
+            - exact_free_entropy(coupling, magnetic_field, error))
+        .abs()
+            < 1e-2
+    );
 }

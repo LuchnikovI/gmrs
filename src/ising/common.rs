@@ -32,7 +32,9 @@ pub trait IsingMessagePassingType {
 
     fn variable_message_update(src: &[IsingMessage], dst: &mut [IsingMessage]);
 
-    fn marginal(messages: &[IsingMessage]) -> Array1<f64>;
+    fn variable_marginal(messages: &[IsingMessage]) -> Array1<f64>;
+
+    fn factor_marginal(factor: &IsingFactor<Self>, messages: &[IsingMessage]) -> Array2<f64>;
 }
 
 // ------------------------------------------------------------------------------------------
@@ -40,7 +42,7 @@ pub trait IsingMessagePassingType {
 #[derive(Debug, Clone, Copy)]
 /// Factor node for Ising model of the form
 /// exp ( coupling * s1 * s2 + first_spin_b * s1 + second_spin_b * s2 )
-pub struct IsingFactor<T: IsingMessagePassingType> {
+pub struct IsingFactor<T: IsingMessagePassingType + ?Sized> {
     marker: PhantomData<T>,
 
     /// Coupling between neighboring spins
@@ -76,6 +78,24 @@ where
             first_spin_b,
             second_spin_b,
         }
+    }
+
+    /// Returns a coupling amplitude
+    #[inline(always)]
+    pub fn get_coupling(&self) -> f64 {
+        self.coupling
+    }
+
+    /// Returns magnetic field amplitude acting on the first spin
+    #[inline(always)]
+    pub fn get_first_spin_field(&self) -> f64 {
+        self.first_spin_b
+    }
+
+    /// Returns magnetic field amplitude acting on the second spin
+    #[inline(always)]
+    pub fn get_second_spin_field(&self) -> f64 {
+        self.second_spin_b
     }
 }
 
@@ -122,8 +142,30 @@ where
     }
 
     #[inline(always)]
-    fn marginal(&self, _: &[Self::Message]) -> Self::Marginal {
-        todo!()
+    fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal {
+        T::factor_marginal(self, messages)
+    }
+
+    #[inline(always)]
+    fn factor(&self) -> Self::Marginal {
+        let mut factor = Vec::with_capacity(4);
+        let ptr = factor.as_mut_ptr();
+        unsafe {
+            *ptr = f64::exp(
+                self.get_coupling() + self.get_first_spin_field() + self.get_second_spin_field(),
+            );
+            *ptr.add(1) = f64::exp(
+                -self.get_coupling() + self.get_first_spin_field() - self.get_second_spin_field(),
+            );
+            *ptr.add(2) = f64::exp(
+                -self.get_coupling() - self.get_first_spin_field() + self.get_second_spin_field(),
+            );
+            *ptr.add(3) = f64::exp(
+                self.get_coupling() - self.get_first_spin_field() - self.get_second_spin_field(),
+            );
+            factor.set_len(4);
+        }
+        Array2::from_shape_vec([2, 2], factor).unwrap()
     }
 }
 
@@ -151,7 +193,7 @@ where
 
     #[inline(always)]
     fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal {
-        T::marginal(messages)
+        T::variable_marginal(messages)
     }
 }
 

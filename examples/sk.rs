@@ -47,7 +47,7 @@ fn main() {
         .unwrap();
     println!("{}", info);
     // Marginal distributions for each spin
-    let marginals = fg.eval_marginals();
+    let marginals = fg.variable_marginals();
     // Averaged single spin distribution
     let mut approx_distr = [0f64; 2];
     marginals.iter().for_each(|x| {

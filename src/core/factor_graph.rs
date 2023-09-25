@@ -152,7 +152,24 @@ where
 
     /// Computes marginals for all variables
     #[inline]
-    pub fn eval_marginals(&self) -> Vec<V::Marginal> {
+    pub fn variable_marginals(&self) -> Vec<V::Marginal> {
         self.variables.iter().map(|x| x.marginal()).collect()
+    }
+
+    /// Computes marginals for all factors
+    #[inline]
+    pub fn factor_marginals(&self) -> Vec<F::Marginal> {
+        self.factors.iter().map(|x| x.marginal()).collect()
+    }
+
+    /// Return factors as standalone objects
+    ///
+    /// # Notes
+    ///
+    /// The most natural data structure representing a standalone factor
+    /// is that used to represent a marginal
+    #[inline]
+    pub fn factors(&self) -> Vec<F::Marginal> {
+        self.factors.iter().map(|x| x.factor()).collect()
     }
 }

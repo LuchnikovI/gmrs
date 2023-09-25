@@ -41,6 +41,11 @@ impl Factor for FakeFactor {
     fn send_messages(&self, _: &[Self::Message], _: &mut [Self::Message], _: &()) {
         unimplemented!()
     }
+
+    #[inline(always)]
+    fn factor(&self) -> Self::Marginal {
+        unimplemented!()
+    }
 }
 
 impl Variable for FakeVariable {

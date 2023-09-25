@@ -1,5 +1,8 @@
-use super::common::{IsingMessage, IsingMessagePassingType};
-use ndarray::Array1;
+use super::{
+    common::{IsingMessage, IsingMessagePassingType},
+    IsingFactor,
+};
+use ndarray::{Array1, Array2};
 
 /// Sum product type of message passing
 #[derive(Debug, Clone, Copy)]
@@ -39,9 +42,39 @@ impl IsingMessagePassingType for SumProduct {
     }
 
     #[inline(always)]
-    fn marginal(messages: &[IsingMessage]) -> Array1<f64> {
+    fn variable_marginal(messages: &[IsingMessage]) -> Array1<f64> {
         let sum_all: f64 = messages.iter().map(|x| x.0).sum();
         let p_down = 1f64 / (f64::exp(2f64 * sum_all) + 1f64);
         Array1::from_vec(vec![1f64 - p_down, p_down])
+    }
+
+    #[inline(always)]
+    fn factor_marginal(factor: &IsingFactor<SumProduct>, messages: &[IsingMessage]) -> Array2<f64> {
+        let mut marginal = Vec::with_capacity(4);
+        let ptr = marginal.as_mut_ptr();
+        unsafe {
+            let m1 = messages.get_unchecked(0).0;
+            let m2 = messages.get_unchecked(1).0;
+            let nu_up_1 = f64::exp(2f64 * m1) / (f64::exp(2f64 * m1) + 1f64);
+            let nu_up_2 = f64::exp(2f64 * m2) / (f64::exp(2f64 * m2) + 1f64);
+            let nu_down_1 = 1f64 - nu_up_1;
+            let nu_down_2 = 1f64 - nu_up_2;
+            *ptr = nu_up_1
+                * nu_up_2
+                * f64::exp(factor.coupling + factor.first_spin_b + factor.second_spin_b);
+            *ptr.add(1) = nu_up_1
+                * nu_down_2
+                * f64::exp(-factor.coupling + factor.first_spin_b - factor.second_spin_b);
+            *ptr.add(2) = nu_down_1
+                * nu_up_2
+                * f64::exp(-factor.coupling - factor.first_spin_b + factor.second_spin_b);
+            *ptr.add(3) = nu_down_1
+                * nu_down_2
+                * f64::exp(factor.coupling - factor.first_spin_b - factor.second_spin_b);
+            marginal.set_len(4);
+        }
+        let mut marginal = Array2::from_shape_vec([2, 2], marginal).unwrap();
+        marginal /= marginal.sum();
+        marginal
     }
 }
