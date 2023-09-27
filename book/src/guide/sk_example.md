@@ -81,10 +81,10 @@ where \\( \gamma \\) is the dumping parameter introduced in the code above, it s
 After the convergence of the message passing algorithm, we can start extracting information about the system in the thermodynamic equilibrium. The simplest thing that we can calculate is the averaged single spin marginal probability distribution, i.e. a probability vector \\( \begin{pmatrix} p_{\uparrow} \\\\ p_\downarrow \end{pmatrix} \\). Averaging is performed over all spins in the system and over all realizations of SK model. Exact elements of the probability vector are known and read \\( p_{\uparrow} = \frac{\exp(2B)}{\exp(2B) + 1} \\) and \\( p_{\downarrow} = \frac{1}{\exp(2B) + 1} \\). Message passing based approximation of the probability vector can be calculated using a single realization of the SK model due to the self-averaging property. One can do this in two steps: (1) calculate marginal distributions for each spin using `.variable_marginals` method of a factor graph, (2) take an average of all the marginal distributions getting the desirable approximate. The code below does these two steps, computes the exact probability vector and prints both vectors to compare them:
 ```rust
 // Marginal distributions for each spin
-let marginals = fg.variable_marginals();
+let variable_marginals = fg.variable_marginals();
 // Averaged single spin distribution
 let mut approx_distr = [0f64; 2];
-marginals.iter().for_each(|x| {
+variable_marginals.iter().for_each(|x| {
         approx_distr[0] += x[0];
         approx_distr[1] += x[1];
     }

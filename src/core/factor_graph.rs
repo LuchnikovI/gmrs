@@ -7,10 +7,12 @@ use crate::{
     core::variable_node::VariableNode,
 };
 
+use serde::{Deserialize, Serialize};
+
 // ------------------------------------------------------------------------------------------
 
 /// Error info that appears if message passing does not converge
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MessagePassingError {
     /// Number of iterations past
     pub iterations_number: usize,
@@ -37,7 +39,7 @@ impl Display for MessagePassingError {
 impl Error for MessagePassingError {}
 
 /// Info that appears if message passing converges
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MessagePassingInfo {
     /// Number of iterations past
     pub iterations_number: usize,
