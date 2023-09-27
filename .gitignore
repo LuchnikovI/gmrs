@@ -2,3 +2,4 @@
 /Cargo.lock
 /book/book
 __pycache__
+*.pdf
