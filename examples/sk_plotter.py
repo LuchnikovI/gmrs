@@ -69,12 +69,12 @@ def main():
     axs[1].plot(beta, discrepancy, 'b')
     axs[1].axvline(1., color='k')
     axs[1].set_ylabel("discrepancy")
-    axs[2].plot(beta, bethe_free_entropy, 'ro', label="Bethe free energy (sum-product)")
-    axs[2].plot(beta, replica_symmetric_free_entropy, 'b-', label="RS free energy")
+    axs[2].plot(beta, bethe_free_entropy, 'ro', label="Bethe free entropy (sum-product)")
+    axs[2].plot(beta, replica_symmetric_free_entropy, 'b-', label="RS free entropy")
     axs[2].axvline(1., color='k')
     axs[2].set_xlabel("inverse temperature")
     axs[2].legend()
-    plt.savefig(f"{os.path.dirname(os.path.abspath(sys.argv[0]))}/plots.pdf", bbox_inches="tight")
+    plt.savefig(f"{os.path.dirname(os.path.abspath(sys.argv[0]))}/sk_plots.svg", bbox_inches="tight")
 
 if __name__ == "__main__":
     main()

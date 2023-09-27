@@ -43,7 +43,8 @@ struct ExampleResult {
     replica_symmetric_free_entropy: f64,
 }
 
-/// Returns replica symmetric solution (valid for high temperature)
+/// Returns a replica symmetric free entropy
+/// (valid for high temperature, beta < 1)
 fn rs_sk_free_entropy(beta: f64) -> f64 {
     0.25 * beta.powi(2) + f64::ln(2f64)
 }
