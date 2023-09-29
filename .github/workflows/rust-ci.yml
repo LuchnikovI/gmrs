@@ -44,6 +44,13 @@ jobs:
         with:
           command: test
           args: --workspace
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - run: ./examples/examples_tests.py
 
   fmt:
     name: Rustfmt
