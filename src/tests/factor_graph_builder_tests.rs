@@ -9,10 +9,10 @@ use crate::core::{Factor, FactorGraphBuilder, Message, Variable};
 #[derive(Debug, Clone, Copy)]
 struct FakeMessage(usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct FakeFactor(usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct FakeVariable;
 
 impl Message for FakeMessage {
@@ -81,64 +81,68 @@ fn small_factor_graph_builder_logic() {
         .unwrap();
     fgb.add_factor(FakeFactor(2), &[3, 1], &mut mesage_initializer)
         .unwrap();
-    let fg = fgb.build();
-    let fac0 = &fg.factors[0];
-    let fac1 = &fg.factors[1];
-    let fac2 = &fg.factors[2];
-    assert_eq!(3, fg.factors.len());
-    let var0 = &fg.variables[0];
-    let var1 = &fg.variables[1];
-    let var2 = &fg.variables[2];
-    let var3 = &fg.variables[3];
-    assert_eq!(4, fg.variables.len());
-    // --------------------------------------------------------------------------------------
-    assert_eq!(fac0.receivers.len(), 3);
-    assert_eq!(fac1.receivers.len(), 2);
-    assert_eq!(fac2.receivers.len(), 2);
-    assert_eq!(fac0.messages.len(), 3);
-    assert_eq!(fac1.messages.len(), 2);
-    assert_eq!(fac2.messages.len(), 2);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(var0.receivers.len(), 1);
-    assert_eq!(var1.receivers.len(), 3);
-    assert_eq!(var2.receivers.len(), 1);
-    assert_eq!(var3.receivers.len(), 2);
-    assert_eq!(var0.messages.len(), 1);
-    assert_eq!(var1.messages.len(), 3);
-    assert_eq!(var2.messages.len(), 1);
-    assert_eq!(var3.messages.len(), 2);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(fac0.var_node_indices, [0, 1, 3]);
-    assert_eq!(fac1.var_node_indices, [1, 2]);
-    assert_eq!(fac2.var_node_indices, [3, 1]);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(var0.fac_node_indices, [0]);
-    assert_eq!(var1.fac_node_indices, [0, 1, 2]);
-    assert_eq!(var2.fac_node_indices, [1]);
-    assert_eq!(var3.fac_node_indices, [0, 2]);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(fac0.var_node_receiver_indices, [0, 0, 0]);
-    assert_eq!(fac1.var_node_receiver_indices, [1, 0]);
-    assert_eq!(fac2.var_node_receiver_indices, [1, 2]);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(var0.fac_node_receiver_indices, [0]);
-    assert_eq!(var1.fac_node_receiver_indices, [1, 0, 1]);
-    assert_eq!(var2.fac_node_receiver_indices, [1]);
-    assert_eq!(var3.fac_node_receiver_indices, [2, 0]);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(unsafe { (*fac0.senders[0]).0 }, var0.receivers[0].0);
-    assert_eq!(unsafe { (*fac0.senders[1]).0 }, var1.receivers[0].0);
-    assert_eq!(unsafe { (*fac0.senders[2]).0 }, var3.receivers[0].0);
-    assert_eq!(unsafe { (*fac1.senders[0]).0 }, var1.receivers[1].0);
-    assert_eq!(unsafe { (*fac1.senders[1]).0 }, var2.receivers[0].0);
-    assert_eq!(unsafe { (*fac2.senders[0]).0 }, var3.receivers[1].0);
-    assert_eq!(unsafe { (*fac2.senders[1]).0 }, var1.receivers[2].0);
-    // --------------------------------------------------------------------------------------
-    assert_eq!(unsafe { (*var0.senders[0]).0 }, fac0.receivers[0].0);
-    assert_eq!(unsafe { (*var1.senders[0]).0 }, fac0.receivers[1].0);
-    assert_eq!(unsafe { (*var1.senders[1]).0 }, fac1.receivers[0].0);
-    assert_eq!(unsafe { (*var1.senders[2]).0 }, fac2.receivers[1].0);
-    assert_eq!(unsafe { (*var2.senders[0]).0 }, fac1.receivers[1].0);
-    assert_eq!(unsafe { (*var3.senders[0]).0 }, fac0.receivers[2].0);
-    assert_eq!(unsafe { (*var3.senders[1]).0 }, fac2.receivers[0].0);
+    let fg1 = fgb.build();
+    let fg2 = fg1.clone();
+    for fg in [fg1, fg2] {
+        let fac0 = &fg.factors[0];
+        let fac1 = &fg.factors[1];
+        let fac2 = &fg.factors[2];
+        assert_eq!(3, fg.factors.len());
+        let var0 = &fg.variables[0];
+        let var1 = &fg.variables[1];
+        let var2 = &fg.variables[2];
+        let var3 = &fg.variables[3];
+        assert_eq!(4, fg.variables.len());
+        // --------------------------------------------------------------------------------------
+        assert_eq!(fac0.receivers.len(), 3);
+        assert_eq!(fac1.receivers.len(), 2);
+        assert_eq!(fac2.receivers.len(), 2);
+        assert_eq!(fac0.messages.len(), 3);
+        assert_eq!(fac1.messages.len(), 2);
+        assert_eq!(fac2.messages.len(), 2);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(var0.receivers.len(), 1);
+        assert_eq!(var1.receivers.len(), 3);
+        assert_eq!(var2.receivers.len(), 1);
+        assert_eq!(var3.receivers.len(), 2);
+        assert_eq!(var0.messages.len(), 1);
+        assert_eq!(var1.messages.len(), 3);
+        assert_eq!(var2.messages.len(), 1);
+        assert_eq!(var3.messages.len(), 2);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(fac0.var_node_indices, [0, 1, 3]);
+        assert_eq!(fac1.var_node_indices, [1, 2]);
+        assert_eq!(fac2.var_node_indices, [3, 1]);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(var0.fac_node_indices, [0]);
+        assert_eq!(var1.fac_node_indices, [0, 1, 2]);
+        assert_eq!(var2.fac_node_indices, [1]);
+        assert_eq!(var3.fac_node_indices, [0, 2]);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(fac0.var_node_receiver_indices, [0, 0, 0]);
+        assert_eq!(fac1.var_node_receiver_indices, [1, 0]);
+        assert_eq!(fac2.var_node_receiver_indices, [1, 2]);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(var0.fac_node_receiver_indices, [0]);
+        assert_eq!(var1.fac_node_receiver_indices, [1, 0, 1]);
+        assert_eq!(var2.fac_node_receiver_indices, [1]);
+        assert_eq!(var3.fac_node_receiver_indices, [2, 0]);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(unsafe { (*fac0.senders[0]).0 }, var0.receivers[0].0);
+        assert_eq!(unsafe { (*fac0.senders[1]).0 }, var1.receivers[0].0);
+        assert_eq!(unsafe { (*fac0.senders[2]).0 }, var3.receivers[0].0);
+        assert_eq!(unsafe { (*fac1.senders[0]).0 }, var1.receivers[1].0);
+        assert_eq!(unsafe { (*fac1.senders[1]).0 }, var2.receivers[0].0);
+        assert_eq!(unsafe { (*fac2.senders[0]).0 }, var3.receivers[1].0);
+        assert_eq!(unsafe { (*fac2.senders[1]).0 }, var1.receivers[2].0);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(unsafe { (*var0.senders[0]).0 }, fac0.receivers[0].0);
+        assert_eq!(unsafe { (*var1.senders[0]).0 }, fac0.receivers[1].0);
+        assert_eq!(unsafe { (*var1.senders[1]).0 }, fac1.receivers[0].0);
+        assert_eq!(unsafe { (*var1.senders[2]).0 }, fac2.receivers[1].0);
+        assert_eq!(unsafe { (*var2.senders[0]).0 }, fac1.receivers[1].0);
+        assert_eq!(unsafe { (*var3.senders[0]).0 }, fac0.receivers[2].0);
+        assert_eq!(unsafe { (*var3.senders[1]).0 }, fac2.receivers[0].0);
+        drop(fg);
+    }
 }

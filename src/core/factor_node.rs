@@ -3,7 +3,7 @@ use crate::{
     core::variable_node::VariableNode,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FactorNode<F, V>
 where
     F: Factor,

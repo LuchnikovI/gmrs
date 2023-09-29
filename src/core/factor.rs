@@ -1,7 +1,7 @@
 use crate::core::message::Message;
 use std::fmt::Debug;
 
-pub trait Factor: Debug + Send {
+pub trait Factor: Clone + Debug + Send {
     /// Type of a message
     type Message: Message;
     /// Message passing hyper parameters

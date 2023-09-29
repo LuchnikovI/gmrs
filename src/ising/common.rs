@@ -101,7 +101,7 @@ where
 
 impl<T> Factor for IsingFactor<T>
 where
-    T: IsingMessagePassingType + Debug + Send,
+    T: IsingMessagePassingType + Clone + Debug + Send,
 {
     type Message = IsingMessage;
     type Parameters = T::Parameters;
@@ -176,7 +176,7 @@ pub struct IsingVariable<T: IsingMessagePassingType>(PhantomData<T>);
 
 impl<T> Variable for IsingVariable<T>
 where
-    T: IsingMessagePassingType + Debug + Send,
+    T: IsingMessagePassingType + Clone + Debug + Send,
 {
     type Message = IsingMessage;
     type Marginal = Array1<f64>;
@@ -210,7 +210,7 @@ pub fn new_ising_builder<T>(
     factors_capacity: usize,
 ) -> FactorGraphBuilder<IsingFactor<T>, IsingVariable<T>>
 where
-    T: IsingMessagePassingType + Debug + Send,
+    T: IsingMessagePassingType + Clone + Debug + Send,
 {
     FactorGraphBuilder::new_with_variables(variables_number, factors_capacity)
 }

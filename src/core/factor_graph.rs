@@ -78,6 +78,24 @@ where
     pub(crate) variables: Vec<VariableNode<V, F>>,
 }
 
+impl<F, V> Clone for FactorGraph<F, V>
+where
+    F: Factor,
+    V: Variable<Message = F::Message>,
+{
+    fn clone(&self) -> Self {
+        let mut factors = self.factors.clone();
+        let mut variables = self.variables.clone();
+        for factor in &mut factors {
+            factor.init_senders(&mut variables);
+        }
+        for variable in &mut variables {
+            variable.init_senders(&mut factors);
+        }
+        FactorGraph { factors, variables }
+    }
+}
+
 impl<F, V> FactorGraph<F, V>
 where
     F: Factor,

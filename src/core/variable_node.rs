@@ -3,7 +3,7 @@ use crate::{
     core::variable::Variable,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VariableNode<V, F>
 where
     V: Variable,
