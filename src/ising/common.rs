@@ -108,6 +108,11 @@ where
     type Marginal = Array2<f64>;
 
     #[inline(always)]
+    fn from_message(_: &Self::Message) -> Self {
+        todo!("Needs to be implemented")
+    }
+
+    #[inline(always)]
     fn degree(&self) -> usize {
         2
     }
@@ -180,6 +185,7 @@ where
 {
     type Message = IsingMessage;
     type Marginal = Array1<f64>;
+    type Sample = i8;
 
     #[inline(always)]
     fn new() -> Self {
@@ -194,6 +200,16 @@ where
     #[inline(always)]
     fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal {
         T::variable_marginal(messages)
+    }
+
+    #[inline(always)]
+    fn sample(&self, _: &[Self::Message], _: &mut impl Rng) -> Self::Sample {
+        todo!("Needs to be implemented")
+    }
+
+    #[inline(always)]
+    fn sample_to_message(_: &Self::Sample) -> Self::Message {
+        todo!("Needs to be implemented")
     }
 }
 

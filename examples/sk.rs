@@ -1,5 +1,8 @@
 use clap::Parser;
-use gmrs::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
+use gmrs::{
+    core::FGError,
+    ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct},
+};
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
@@ -105,7 +108,13 @@ fn main() {
     let replica_symmetric_free_entropy = rs_sk_free_entropy(beta);
     let (is_converged, iterations_number, discrepancy) = match info {
         Ok(info) => (true, info.iterations_number, info.final_discrepancy),
-        Err(info) => (false, info.iterations_number, info.final_discrepancy),
+        Err(err) => {
+            if let FGError::MessagePassingError(info) = err {
+                (false, info.iterations_number, info.final_discrepancy)
+            } else {
+                unreachable!()
+            }
+        }
     };
     let example_result = ExampleResult {
         is_converged,

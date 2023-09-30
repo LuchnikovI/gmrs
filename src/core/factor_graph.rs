@@ -11,6 +11,35 @@ use serde::{Deserialize, Serialize};
 
 // ------------------------------------------------------------------------------------------
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// Possible factor graph errors
+pub enum FGError {
+    /// Message passing error when method does not converge
+    MessagePassingError(MessagePassingError),
+
+    /// ID (index) of a variable is out of range of variables list
+    OutOfRangeVariable(usize, usize),
+}
+
+impl Display for FGError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FGError::MessagePassingError(err) => write!(f, "{err}"),
+            FGError::OutOfRangeVariable(size, pos) => write!(
+                f,
+                "ID (index) of a variable {} is out of range of [0..{}] variables",
+                pos, size,
+            ),
+        }
+    }
+}
+
+impl From<MessagePassingError> for FGError {
+    fn from(value: MessagePassingError) -> Self {
+        FGError::MessagePassingError(value)
+    }
+}
+
 /// Error info that appears if message passing does not converge
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MessagePassingError {
@@ -63,7 +92,7 @@ impl Display for MessagePassingInfo {
     }
 }
 
-pub type MessagePassingResult = Result<MessagePassingInfo, MessagePassingError>;
+pub type FGResult<T> = Result<T, FGError>;
 
 // ------------------------------------------------------------------------------------------
 
@@ -130,7 +159,7 @@ where
         max_iterations_number: usize,
         threshold: f64,
         parameters: F::Parameters,
-    ) -> MessagePassingResult {
+    ) -> FGResult<MessagePassingInfo> {
         let mut last_discrepancy = f64::MAX;
         for i in 0..max_iterations_number {
             let factors_discrepancy = self
@@ -167,7 +196,8 @@ where
             iterations_number: max_iterations_number,
             threshold,
             final_discrepancy: last_discrepancy,
-        })
+        }
+        .into())
     }
 
     /// Computes marginals for all variables
@@ -191,5 +221,69 @@ where
     #[inline]
     pub fn factors(&self) -> Vec<F::Marginal> {
         self.factors.iter().map(|x| x.factor()).collect()
+    }
+
+    /// Adds a unit degree factor fixing a variable value
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - A value of a fixed variable
+    /// * `var_index` - The index of a fixed variable
+    ///
+    /// # Notes
+    ///
+    /// One should not freeze one variable twice or more times. This
+    /// could lead to nonsense result
+    #[inline]
+    pub fn freeze_variable(&mut self, value: &V::Sample, var_index: usize) -> FGResult<()> {
+        let message = V::sample_to_message(value);
+        let factor = F::from_message(&message);
+        let degree = factor.degree();
+        if degree != 1 {
+            panic!(
+                "Factor degree is {degree} but it must be 1. This is a bug, please make an issue."
+            )
+        }
+        let factor_node = FactorNode::<F, V>::new_disconnected(factor);
+        self.factors.push(factor_node);
+        let factor_node = self.factors.last_mut().unwrap();
+        let variable_node = if let Some(var) = self.variables.get_mut(var_index) {
+            var
+        } else {
+            return Err(FGError::OutOfRangeVariable(self.variables.len(), var_index));
+        };
+        let receivers_len = variable_node.receivers.len();
+        let receivers_cap = variable_node.receivers.capacity();
+        factor_node.receivers.push(message);
+        factor_node.messages.push(message);
+        factor_node.var_node_indices.push(var_index);
+        factor_node.var_node_receiver_indices.push(receivers_len);
+        variable_node.receivers.push(message);
+        factor_node
+            .senders
+            .push(variable_node.receivers.last_mut().unwrap());
+        variable_node
+            .senders
+            .push(factor_node.receivers.last_mut().unwrap());
+        variable_node.messages.push(message);
+        variable_node.fac_node_indices.push(self.factors.len() - 1);
+        variable_node.fac_node_receiver_indices.push(0);
+        // if reallocation happens, one needs to reinitialize pointers
+        if receivers_cap == receivers_len {
+            let receivers_iter = variable_node.receivers.iter_mut();
+            let fac_node_index_iter = variable_node.fac_node_indices.iter();
+            let fac_node_receiver_index_iter = variable_node.fac_node_receiver_indices.iter();
+            let iter = receivers_iter.zip(fac_node_index_iter.zip(fac_node_receiver_index_iter));
+            for (r, (i, ri)) in iter {
+                unsafe {
+                    *self
+                        .factors
+                        .get_unchecked_mut(*i)
+                        .senders
+                        .get_unchecked_mut(*ri) = r;
+                }
+            }
+        }
+        Ok(())
     }
 }

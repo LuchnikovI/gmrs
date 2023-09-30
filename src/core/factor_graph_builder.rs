@@ -8,7 +8,7 @@ use crate::{
 // error ------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Possible factor graph errors
+/// Possible factor graph builder errors
 pub enum FGBuilderError {
     /// Degree of a factor does not match a number of adjacent variables
     DegreeError(usize, Vec<usize>),

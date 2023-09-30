@@ -9,6 +9,20 @@ pub trait Factor: Clone + Debug + Send {
     /// Type representing a marginal distribution
     type Marginal;
 
+    /// Creates a factor of unit degree that produces a given message
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - A message that is converted to a factor
+    ///
+    /// # Note
+    ///
+    /// This method is useful to fix values of variables e.g. to
+    /// represent conditional distributions by a factor graph. By this
+    /// method one can create a unit degree factor that sends a message
+    /// fixing a variable value
+    fn from_message(message: &Self::Message) -> Self;
+
     /// Returns a degree of a factor (number of adjoint variables)
     fn degree(&self) -> usize;
 

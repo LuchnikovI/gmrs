@@ -28,6 +28,11 @@ impl Factor for FakeFactor {
     type Parameters = ();
 
     #[inline(always)]
+    fn from_message(_: &Self::Message) -> Self {
+        FakeFactor(1)
+    }
+
+    #[inline(always)]
     fn degree(&self) -> usize {
         self.0
     }
@@ -51,6 +56,7 @@ impl Factor for FakeFactor {
 impl Variable for FakeVariable {
     type Message = FakeMessage;
     type Marginal = ();
+    type Sample = usize;
 
     #[inline(always)]
     fn new() -> Self {
@@ -65,6 +71,16 @@ impl Variable for FakeVariable {
     #[inline(always)]
     fn marginal(&self, _: &[Self::Message]) -> Self::Marginal {
         unimplemented!()
+    }
+
+    #[inline(always)]
+    fn sample(&self, _: &[Self::Message], _: &mut impl Rng) -> Self::Sample {
+        unimplemented!()
+    }
+
+    #[inline(always)]
+    fn sample_to_message(sample: &Self::Sample) -> Self::Message {
+        FakeMessage(*sample)
     }
 }
 
@@ -81,13 +97,37 @@ fn small_factor_graph_builder_logic() {
         .unwrap();
     fgb.add_factor(FakeFactor(2), &[3, 1], &mut mesage_initializer)
         .unwrap();
-    let fg1 = fgb.build();
-    let fg2 = fg1.clone();
-    for fg in [fg1, fg2] {
+    let mut fg1 = fgb.build();
+    fg1.freeze_variable(&0, 0).unwrap();
+    fg1.freeze_variable(&1, 1).unwrap();
+    fg1.freeze_variable(&2, 2).unwrap();
+    fg1.freeze_variable(&3, 3).unwrap();
+    fgb = FactorGraphBuilder::<FakeFactor, FakeVariable>::new();
+    fgb.add_variable();
+    fgb.add_variable();
+    fgb.add_variable();
+    fgb.add_variable();
+    fgb.add_factor(FakeFactor(3), &[0, 1, 3], &mut mesage_initializer)
+        .unwrap();
+    fgb.add_factor(FakeFactor(2), &[1, 2], &mut mesage_initializer)
+        .unwrap();
+    fgb.add_factor(FakeFactor(2), &[3, 1], &mut mesage_initializer)
+        .unwrap();
+    let mut fg2 = fgb.build();
+    fg2.freeze_variable(&0, 0).unwrap();
+    fg2.freeze_variable(&1, 1).unwrap();
+    fg2.freeze_variable(&2, 2).unwrap();
+    fg2.freeze_variable(&3, 3).unwrap();
+    let fg3 = fg2.clone();
+    for fg in [fg1, fg2, fg3] {
         let fac0 = &fg.factors[0];
         let fac1 = &fg.factors[1];
         let fac2 = &fg.factors[2];
-        assert_eq!(3, fg.factors.len());
+        let freeze1 = &fg.factors[3];
+        let freeze2 = &fg.factors[4];
+        let freeze3 = &fg.factors[5];
+        let freeze4 = &fg.factors[6];
+        assert_eq!(7, fg.factors.len());
         let var0 = &fg.variables[0];
         let var1 = &fg.variables[1];
         let var2 = &fg.variables[2];
@@ -97,36 +137,52 @@ fn small_factor_graph_builder_logic() {
         assert_eq!(fac0.receivers.len(), 3);
         assert_eq!(fac1.receivers.len(), 2);
         assert_eq!(fac2.receivers.len(), 2);
+        assert_eq!(freeze1.receivers.len(), 1);
+        assert_eq!(freeze2.receivers.len(), 1);
+        assert_eq!(freeze3.receivers.len(), 1);
+        assert_eq!(freeze4.receivers.len(), 1);
         assert_eq!(fac0.messages.len(), 3);
         assert_eq!(fac1.messages.len(), 2);
         assert_eq!(fac2.messages.len(), 2);
+        assert_eq!(freeze1.messages.len(), 1);
+        assert_eq!(freeze2.messages.len(), 1);
+        assert_eq!(freeze3.messages.len(), 1);
+        assert_eq!(freeze4.messages.len(), 1);
         // --------------------------------------------------------------------------------------
-        assert_eq!(var0.receivers.len(), 1);
-        assert_eq!(var1.receivers.len(), 3);
-        assert_eq!(var2.receivers.len(), 1);
-        assert_eq!(var3.receivers.len(), 2);
-        assert_eq!(var0.messages.len(), 1);
-        assert_eq!(var1.messages.len(), 3);
-        assert_eq!(var2.messages.len(), 1);
-        assert_eq!(var3.messages.len(), 2);
+        assert_eq!(var0.receivers.len(), 2);
+        assert_eq!(var1.receivers.len(), 4);
+        assert_eq!(var2.receivers.len(), 2);
+        assert_eq!(var3.receivers.len(), 3);
+        assert_eq!(var0.messages.len(), 2);
+        assert_eq!(var1.messages.len(), 4);
+        assert_eq!(var2.messages.len(), 2);
+        assert_eq!(var3.messages.len(), 3);
         // --------------------------------------------------------------------------------------
         assert_eq!(fac0.var_node_indices, [0, 1, 3]);
         assert_eq!(fac1.var_node_indices, [1, 2]);
         assert_eq!(fac2.var_node_indices, [3, 1]);
+        assert_eq!(freeze1.var_node_indices, [0]);
+        assert_eq!(freeze2.var_node_indices, [1]);
+        assert_eq!(freeze3.var_node_indices, [2]);
+        assert_eq!(freeze4.var_node_indices, [3]);
         // --------------------------------------------------------------------------------------
-        assert_eq!(var0.fac_node_indices, [0]);
-        assert_eq!(var1.fac_node_indices, [0, 1, 2]);
-        assert_eq!(var2.fac_node_indices, [1]);
-        assert_eq!(var3.fac_node_indices, [0, 2]);
+        assert_eq!(var0.fac_node_indices, [0, 3]);
+        assert_eq!(var1.fac_node_indices, [0, 1, 2, 4]);
+        assert_eq!(var2.fac_node_indices, [1, 5]);
+        assert_eq!(var3.fac_node_indices, [0, 2, 6]);
         // --------------------------------------------------------------------------------------
         assert_eq!(fac0.var_node_receiver_indices, [0, 0, 0]);
         assert_eq!(fac1.var_node_receiver_indices, [1, 0]);
         assert_eq!(fac2.var_node_receiver_indices, [1, 2]);
+        assert_eq!(freeze1.var_node_receiver_indices, [1]);
+        assert_eq!(freeze2.var_node_receiver_indices, [3]);
+        assert_eq!(freeze3.var_node_receiver_indices, [1]);
+        assert_eq!(freeze4.var_node_receiver_indices, [2]);
         // --------------------------------------------------------------------------------------
-        assert_eq!(var0.fac_node_receiver_indices, [0]);
-        assert_eq!(var1.fac_node_receiver_indices, [1, 0, 1]);
-        assert_eq!(var2.fac_node_receiver_indices, [1]);
-        assert_eq!(var3.fac_node_receiver_indices, [2, 0]);
+        assert_eq!(var0.fac_node_receiver_indices, [0, 0]);
+        assert_eq!(var1.fac_node_receiver_indices, [1, 0, 1, 0]);
+        assert_eq!(var2.fac_node_receiver_indices, [1, 0]);
+        assert_eq!(var3.fac_node_receiver_indices, [2, 0, 0]);
         // --------------------------------------------------------------------------------------
         assert_eq!(unsafe { (*fac0.senders[0]).0 }, var0.receivers[0].0);
         assert_eq!(unsafe { (*fac0.senders[1]).0 }, var1.receivers[0].0);
@@ -135,14 +191,27 @@ fn small_factor_graph_builder_logic() {
         assert_eq!(unsafe { (*fac1.senders[1]).0 }, var2.receivers[0].0);
         assert_eq!(unsafe { (*fac2.senders[0]).0 }, var3.receivers[1].0);
         assert_eq!(unsafe { (*fac2.senders[1]).0 }, var1.receivers[2].0);
+        assert_eq!(unsafe { (*freeze1.senders[0]).0 }, var0.receivers.last().unwrap().0);
+        assert_eq!(unsafe { (*freeze2.senders[0]).0 }, var1.receivers.last().unwrap().0);
+        assert_eq!(unsafe { (*freeze3.senders[0]).0 }, var2.receivers.last().unwrap().0);
+        assert_eq!(unsafe { (*freeze4.senders[0]).0 }, var3.receivers.last().unwrap().0);
+        // --------------------------------------------------------------------------------------
+        assert_eq!(var0.receivers.last().unwrap().0, 0);
+        assert_eq!(var1.receivers.last().unwrap().0, 1);
+        assert_eq!(var2.receivers.last().unwrap().0, 2);
+        assert_eq!(var3.receivers.last().unwrap().0, 3);
         // --------------------------------------------------------------------------------------
         assert_eq!(unsafe { (*var0.senders[0]).0 }, fac0.receivers[0].0);
+        assert_eq!(unsafe { (*var0.senders[1]).0 }, freeze1.receivers[0].0);
         assert_eq!(unsafe { (*var1.senders[0]).0 }, fac0.receivers[1].0);
         assert_eq!(unsafe { (*var1.senders[1]).0 }, fac1.receivers[0].0);
         assert_eq!(unsafe { (*var1.senders[2]).0 }, fac2.receivers[1].0);
+        assert_eq!(unsafe { (*var1.senders[3]).0 }, freeze2.receivers[0].0);
         assert_eq!(unsafe { (*var2.senders[0]).0 }, fac1.receivers[1].0);
+        assert_eq!(unsafe { (*var2.senders[1]).0 }, freeze3.receivers[0].0);
         assert_eq!(unsafe { (*var3.senders[0]).0 }, fac0.receivers[2].0);
         assert_eq!(unsafe { (*var3.senders[1]).0 }, fac2.receivers[0].0);
+        assert_eq!(unsafe { (*var3.senders[2]).0 }, freeze4.receivers[0].0);
         drop(fg);
     }
 }

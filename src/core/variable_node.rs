@@ -55,8 +55,8 @@ where
             .zip(&self.fac_node_receiver_indices);
         let senders: Vec<_> = indices_iter
             .map(|(fac_index, fac_receiver_index)| unsafe {
-                let var = factors.get_unchecked_mut(*fac_index);
-                let mut_ptr: *mut _ = var.receivers.get_unchecked_mut(*fac_receiver_index);
+                let fac = factors.get_unchecked_mut(*fac_index);
+                let mut_ptr: *mut _ = fac.receivers.get_unchecked_mut(*fac_receiver_index);
                 mut_ptr
             })
             .collect();
