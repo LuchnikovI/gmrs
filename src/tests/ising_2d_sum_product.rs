@@ -38,7 +38,7 @@ fn ising_2d_test() {
     }
     let mut fg = fgb.build();
     let _ = fg
-        .run_message_passing_parallel(10000, error, decay)
+        .run_message_passing_parallel(10000, error, &decay)
         .unwrap();
     let variable_marginals = fg.variable_marginals();
     let calculated_up_prob = if variable_marginals[0][0] > variable_marginals[0][1] {

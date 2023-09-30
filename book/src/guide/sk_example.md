@@ -61,7 +61,7 @@ Here first we create a factor graph with `spins_number` variables and memory all
 Now we are ready to run the message passing algorithm and print its convergence info:
 ```rust
 let info = fg
-    .run_message_passing_parallel(max_iter, error, decay)
+    .run_message_passing_parallel(max_iter, error, &decay)
     .unwrap();
 println!("{}", info);
 ```

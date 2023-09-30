@@ -9,6 +9,8 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
+use rand::Rng;
+
 // ------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -147,7 +149,7 @@ where
     ///
     /// # Arguments
     ///
-    /// * `max_iterations_number` - A maximal number of iteration
+    /// * `max_iterations_number` - A maximal number of iterations
     /// * `threshold` - A threshold specifying the convergence criterion: if
     ///     the discrepancy between last and previous iteration messages maximal
     ///     across variables and factors is smaller than this threshold,
@@ -158,7 +160,7 @@ where
         &mut self,
         max_iterations_number: usize,
         threshold: f64,
-        parameters: F::Parameters,
+        parameters: &F::Parameters,
     ) -> FGResult<MessagePassingInfo> {
         let mut last_discrepancy = f64::MAX;
         for i in 0..max_iterations_number {
@@ -166,7 +168,7 @@ where
                 .factors
                 .par_iter_mut()
                 .map(|factor| {
-                    factor.eval_messages(&parameters);
+                    factor.eval_messages(parameters);
                     let max_discrepancy = factor.eval_discrepancy();
                     factor.send_messages();
                     max_discrepancy
@@ -285,5 +287,43 @@ where
             }
         }
         Ok(())
+    }
+
+    /// Samples from a factor graph
+    ///
+    /// # Arguments
+    ///
+    /// * `max_iterations_number` - A maximal number of iterations in a message passing algorithm
+    /// * `threshold` - A threshold specifying the convergence criterion: if
+    ///     the discrepancy between last and previous iteration messages maximal
+    ///     across variables and factors is smaller than this threshold,
+    ///     message passing is converged
+    /// * `parameters` - Hyper parameters of message passing
+    /// * `rng` - A random numbers generator
+    ///
+    /// # Notes
+    ///
+    /// Sampling requires to run message passing after sampling and fixing of each
+    /// variable to get stationary messages for the updated factor graph.
+    /// This is why one has some arguments similar to those of 'run_message_passing_parallel'
+    /// method. Note also, that this method fixes all variables of a factor graph making
+    /// them further unusable. To keep the initial graph simply clone it before running
+    /// sampling
+    pub fn sample(
+        &mut self,
+        max_iterations_number: usize,
+        threshold: f64,
+        parameters: &F::Parameters,
+        rng: &mut impl Rng,
+    ) -> FGResult<Vec<V::Sample>> {
+        let variables_number = self.variables.len();
+        let mut samples = Vec::with_capacity(variables_number);
+        for i in 0..variables_number {
+            let sample = self.variables.get_mut(i).unwrap().sample(rng);
+            samples.push(sample);
+            self.freeze_variable(&sample, i).unwrap();
+            self.run_message_passing_parallel(max_iterations_number, threshold, parameters)?;
+        }
+        Ok(samples)
     }
 }

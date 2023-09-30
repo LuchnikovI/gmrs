@@ -54,7 +54,9 @@ fn ising_1d_test() {
         .unwrap();
     }
     let mut fg = fgb.build();
-    let _ = fg.run_message_passing_parallel(1000, error, decay).unwrap();
+    let _ = fg
+        .run_message_passing_parallel(1000, error, &decay)
+        .unwrap();
     let variable_marginals = fg.variable_marginals();
     let (exact_mid_spin_prob_up, exact_bound_spin_prob_up) =
         exact_infinite_ising_1d_magnetization(coupling, magnetic_field, error);

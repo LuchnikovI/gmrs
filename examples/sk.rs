@@ -93,7 +93,7 @@ fn main() {
         }
     }
     let mut fg = fgb.build();
-    let info = fg.run_message_passing_parallel(max_iter, error, decay);
+    let info = fg.run_message_passing_parallel(max_iter, error, &decay);
     let variable_marginals = fg.variable_marginals();
     let factors = fg.factors();
     let factor_marginals = fg.factor_marginals();

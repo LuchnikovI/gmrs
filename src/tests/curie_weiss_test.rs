@@ -48,7 +48,7 @@ fn curie_weiss_test() {
     }
     let mut fg = fgb.build();
     let _ = fg
-        .run_message_passing_parallel(10000, error, decay)
+        .run_message_passing_parallel(10000, error, &decay)
         .unwrap();
     let variable_marginals = fg.variable_marginals();
     let exact_up_prob = exact_curie_weiss_up_prob(coupling, magnetic_field, error);

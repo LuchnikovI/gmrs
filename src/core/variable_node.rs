@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::{
     core::factor::Factor, core::factor_node::FactorNode, core::message::Message,
     core::variable::Variable,
@@ -91,5 +93,10 @@ where
     #[inline(always)]
     pub(super) fn marginal(&self) -> V::Marginal {
         self.variable.marginal(&self.receivers)
+    }
+
+    #[inline(always)]
+    pub(super) fn sample(&self, rng: &mut impl Rng) -> V::Sample {
+        self.variable.sample(&self.receivers, rng)
     }
 }

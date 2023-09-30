@@ -9,7 +9,7 @@ pub trait Variable: Clone + Debug + Send {
     /// Type representing a marginal distribution
     type Marginal;
     /// Type representing a sample
-    type Sample;
+    type Sample: Copy;
 
     /// Create a new variable instance
     fn new() -> Self;
