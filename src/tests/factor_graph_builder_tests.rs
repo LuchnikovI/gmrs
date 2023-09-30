@@ -191,10 +191,22 @@ fn small_factor_graph_builder_logic() {
         assert_eq!(unsafe { (*fac1.senders[1]).0 }, var2.receivers[0].0);
         assert_eq!(unsafe { (*fac2.senders[0]).0 }, var3.receivers[1].0);
         assert_eq!(unsafe { (*fac2.senders[1]).0 }, var1.receivers[2].0);
-        assert_eq!(unsafe { (*freeze1.senders[0]).0 }, var0.receivers.last().unwrap().0);
-        assert_eq!(unsafe { (*freeze2.senders[0]).0 }, var1.receivers.last().unwrap().0);
-        assert_eq!(unsafe { (*freeze3.senders[0]).0 }, var2.receivers.last().unwrap().0);
-        assert_eq!(unsafe { (*freeze4.senders[0]).0 }, var3.receivers.last().unwrap().0);
+        assert_eq!(
+            unsafe { (*freeze1.senders[0]).0 },
+            var0.receivers.last().unwrap().0
+        );
+        assert_eq!(
+            unsafe { (*freeze2.senders[0]).0 },
+            var1.receivers.last().unwrap().0
+        );
+        assert_eq!(
+            unsafe { (*freeze3.senders[0]).0 },
+            var2.receivers.last().unwrap().0
+        );
+        assert_eq!(
+            unsafe { (*freeze4.senders[0]).0 },
+            var3.receivers.last().unwrap().0
+        );
         // --------------------------------------------------------------------------------------
         assert_eq!(var0.receivers.last().unwrap().0, 0);
         assert_eq!(var1.receivers.last().unwrap().0, 1);
