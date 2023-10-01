@@ -1,5 +1,5 @@
 use crate::core::{Factor, FactorGraphBuilder, Message, Variable};
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, ArrayD, IxDyn};
 use rand::Rng;
 use rand_distr::{Distribution, Uniform};
 use std::{fmt::Debug, marker::PhantomData};
@@ -19,83 +19,92 @@ impl Message for IsingMessage {
 
 // ------------------------------------------------------------------------------------------
 
+#[inline(always)]
+pub(super) fn sigmoid(x: f64) -> f64 {
+    if x > 0f64 {
+        1f64 / (1f64 + f64::exp(-x))
+    } else {
+        f64::exp(x) / (1f64 + f64::exp(x))
+    }
+}
+
+#[inline(always)]
+pub(super) fn log_sigmoid(x: f64) -> f64 {
+    if x > 0f64 {
+        -f64::ln(1f64 + f64::exp(-x))
+    } else {
+        x - f64::ln(1f64 + f64::exp(x))
+    }
+}
+
+#[inline(always)]
+pub(super) fn log_sum_exponents(x: f64, y: f64) -> f64 {
+    if x > y {
+        x + f64::ln(1f64 + f64::exp(y - x))
+    } else {
+        y + f64::ln(1f64 + f64::exp(x - y))
+    }
+}
+
+#[inline(always)]
+pub(super) fn logit(x: f64) -> f64 {
+    f64::ln(x) - f64::ln(1f64 - x)
+}
+
+// ------------------------------------------------------------------------------------------
+
 pub trait IsingMessagePassingType {
     type Parameters: Sync;
     fn factor_message_update(
         message: IsingMessage,
         prev_message: IsingMessage,
-        coupling: f64,
-        input_spin_magnetic_field: f64,
-        output_spin_magnetic_field: f64,
+        log_p_ou_iu: f64,
+        log_p_ou_id: f64,
+        log_p_od_iu: f64,
+        log_p_od_id: f64,
         parameters: &Self::Parameters,
     ) -> IsingMessage;
 
-    fn variable_message_update(src: &[IsingMessage], dst: &mut [IsingMessage]);
-
-    fn variable_marginal(messages: &[IsingMessage]) -> Array1<f64>;
-
-    fn factor_marginal(factor: &IsingFactor<Self>, messages: &[IsingMessage]) -> Array2<f64>;
+    fn sample(messages: &[IsingMessage], rng: &mut impl Rng) -> i8;
 }
 
 // ------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy)]
-/// Factor node for Ising model of the form
+/// Coupling Ising factor of the form
 /// exp ( coupling * s1 * s2 + first_spin_b * s1 + second_spin_b * s2 )
-pub struct IsingFactor<T: IsingMessagePassingType + ?Sized> {
-    marker: PhantomData<T>,
-
-    /// Coupling between neighboring spins
-    pub coupling: f64,
-
-    /// Magnetic field acting on the first spin
-    pub first_spin_b: f64,
-
-    /// Magnetic field acting on the second spin
-    pub second_spin_b: f64,
+/// or a unit degree factor containing a value determining an output message
+pub enum IsingFactor<T: IsingMessagePassingType + ?Sized> {
+    Coupling {
+        marker: PhantomData<T>,
+        log_puu: f64,
+        log_pud: f64,
+        log_pdu: f64,
+        log_pdd: f64,
+    },
+    UnitFactor(f64),
 }
 
 impl<T> IsingFactor<T>
 where
     T: IsingMessagePassingType + Debug + Send,
 {
-    /// Crates a new Ising factor.
+    /// Crates a new Ising coupling factor.
     ///
     /// # Arguments
     ///
     /// * `coupling` - A coupling between spins
     /// * `first_spin_b` - A magnetic field acting on the first spin
     /// * `second_spin_b` - A magnetic field acting on the second spin
-    ///
-    /// # Notes
-    ///
-    /// Ising factor always has degree (number of adjoint variables) equal to 2
     #[inline]
     pub fn new(coupling: f64, first_spin_b: f64, second_spin_b: f64) -> Self {
-        IsingFactor {
+        IsingFactor::Coupling {
             marker: PhantomData,
-            coupling,
-            first_spin_b,
-            second_spin_b,
+            log_puu: coupling + first_spin_b + second_spin_b,
+            log_pud: -coupling + first_spin_b - second_spin_b,
+            log_pdu: -coupling - first_spin_b + second_spin_b,
+            log_pdd: coupling - first_spin_b - second_spin_b,
         }
-    }
-
-    /// Returns a coupling amplitude
-    #[inline(always)]
-    pub fn get_coupling(&self) -> f64 {
-        self.coupling
-    }
-
-    /// Returns magnetic field amplitude acting on the first spin
-    #[inline(always)]
-    pub fn get_first_spin_field(&self) -> f64 {
-        self.first_spin_b
-    }
-
-    /// Returns magnetic field amplitude acting on the second spin
-    #[inline(always)]
-    pub fn get_second_spin_field(&self) -> f64 {
-        self.second_spin_b
     }
 }
 
@@ -105,16 +114,19 @@ where
 {
     type Message = IsingMessage;
     type Parameters = T::Parameters;
-    type Marginal = Array2<f64>;
+    type Marginal = ArrayD<f64>;
 
     #[inline(always)]
-    fn from_message(_: &Self::Message) -> Self {
-        todo!("Needs to be implemented")
+    fn from_message(message: &Self::Message) -> Self {
+        IsingFactor::UnitFactor(message.0)
     }
 
     #[inline(always)]
     fn degree(&self) -> usize {
-        2
+        match self {
+            IsingFactor::Coupling { .. } => 2,
+            IsingFactor::UnitFactor(_) => 1,
+        }
     }
 
     #[inline(always)]
@@ -124,53 +136,98 @@ where
         dst: &mut [Self::Message],
         parameters: &T::Parameters,
     ) {
-        unsafe {
-            let prev_message = *dst.get_unchecked(1);
-            *dst.get_unchecked_mut(1) = T::factor_message_update(
-                *src.get_unchecked(0),
-                prev_message,
-                self.coupling,
-                self.first_spin_b,
-                self.second_spin_b,
-                parameters,
-            );
-            let prev_message = *dst.get_unchecked(0);
-            *dst.get_unchecked_mut(0) = T::factor_message_update(
-                *src.get_unchecked(1),
-                prev_message,
-                self.coupling,
-                self.second_spin_b,
-                self.first_spin_b,
-                parameters,
-            );
+        match self {
+            IsingFactor::Coupling {
+                marker: _,
+                log_puu,
+                log_pud,
+                log_pdu,
+                log_pdd,
+            } => unsafe {
+                let prev_message = *dst.get_unchecked(1);
+                *dst.get_unchecked_mut(1) = T::factor_message_update(
+                    *src.get_unchecked(0),
+                    prev_message,
+                    *log_puu,
+                    *log_pdu,
+                    *log_pud,
+                    *log_pdd,
+                    parameters,
+                );
+                let prev_message = *dst.get_unchecked(0);
+                *dst.get_unchecked_mut(0) = T::factor_message_update(
+                    *src.get_unchecked(1),
+                    prev_message,
+                    *log_puu,
+                    *log_pud,
+                    *log_pdu,
+                    *log_pdd,
+                    parameters,
+                );
+            },
+            IsingFactor::UnitFactor(m) => unsafe {
+                *dst.get_unchecked_mut(0) = IsingMessage(*m);
+            },
         }
     }
 
     #[inline(always)]
     fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal {
-        T::factor_marginal(self, messages)
+        match self {
+            IsingFactor::Coupling {
+                marker: _,
+                log_puu,
+                log_pud,
+                log_pdu,
+                log_pdd,
+            } => {
+                let nu_up_1 = log_sigmoid(unsafe { messages.get_unchecked(0).0 });
+                let nu_up_2 = log_sigmoid(unsafe { messages.get_unchecked(1).0 });
+                let nu_down_1 = log_sigmoid(unsafe { -messages.get_unchecked(0).0 });
+                let nu_down_2 = log_sigmoid(unsafe { -messages.get_unchecked(1).0 });
+                let marginal = vec![
+                    (log_puu + nu_up_1 + nu_up_2).exp(),
+                    (log_pud + nu_up_1 + nu_down_2).exp(),
+                    (log_pdu + nu_down_1 + nu_up_2).exp(),
+                    (log_pdd + nu_down_1 + nu_down_2).exp(),
+                ];
+                let mut marginal = ArrayD::from_shape_vec(IxDyn(&[2, 2]), marginal).unwrap();
+                marginal /= marginal.sum();
+                marginal
+            }
+            IsingFactor::UnitFactor(m) => {
+                let log_pu = log_sigmoid(*m);
+                let log_pd = log_sigmoid(-*m);
+                let nu_up = log_sigmoid(unsafe { messages.get_unchecked(0).0 });
+                let nu_down = log_sigmoid(unsafe { messages.get_unchecked(1).0 });
+                let marginal = vec![(log_pu + nu_up).exp(), (log_pd + nu_down).exp()];
+                let mut marginal = ArrayD::from_shape_vec(IxDyn(&[2]), marginal).unwrap();
+                marginal /= marginal.sum();
+                marginal
+            }
+        }
     }
 
     #[inline(always)]
     fn factor(&self) -> Self::Marginal {
-        let mut factor = Vec::with_capacity(4);
-        let ptr = factor.as_mut_ptr();
-        unsafe {
-            *ptr = f64::exp(
-                self.get_coupling() + self.get_first_spin_field() + self.get_second_spin_field(),
-            );
-            *ptr.add(1) = f64::exp(
-                -self.get_coupling() + self.get_first_spin_field() - self.get_second_spin_field(),
-            );
-            *ptr.add(2) = f64::exp(
-                -self.get_coupling() - self.get_first_spin_field() + self.get_second_spin_field(),
-            );
-            *ptr.add(3) = f64::exp(
-                self.get_coupling() - self.get_first_spin_field() - self.get_second_spin_field(),
-            );
-            factor.set_len(4);
+        match self {
+            IsingFactor::Coupling {
+                marker: _,
+                log_puu,
+                log_pud,
+                log_pdu,
+                log_pdd,
+            } => {
+                let factor = vec![log_puu.exp(), log_pud.exp(), log_pdu.exp(), log_pdd.exp()];
+                ArrayD::from_shape_vec(IxDyn(&[2, 2]), factor).unwrap()
+            }
+            IsingFactor::UnitFactor(m) => {
+                let factor = vec![log_sigmoid(*m), log_sigmoid(-*m)];
+                let mut factor = ArrayD::from_shape_vec(IxDyn(&[2]), factor).unwrap();
+                factor /= factor.sum();
+                factor
+            }
         }
-        Array2::from_shape_vec([2, 2], factor).unwrap()
     }
 }
 
@@ -194,22 +251,31 @@ where
 
     #[inline(always)]
     fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message]) {
-        T::variable_message_update(src, dst);
+        let sum_all: f64 = src.iter().map(|x| x.0).sum();
+        for (d, s) in dst.iter_mut().zip(src) {
+            d.0 = sum_all - s.0;
+        }
     }
 
     #[inline(always)]
     fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal {
-        T::variable_marginal(messages)
+        let all_sum = messages.iter().map(|x| x.0).sum();
+        let p_up = sigmoid(all_sum);
+        Array1::from_vec(vec![p_up, 1f64 - p_up])
     }
 
     #[inline(always)]
-    fn sample(&self, _: &[Self::Message], _: &mut impl Rng) -> Self::Sample {
-        todo!("Needs to be implemented")
+    fn sample(&self, messages: &[Self::Message], rng: &mut impl Rng) -> Self::Sample {
+        T::sample(messages, rng)
     }
 
     #[inline(always)]
-    fn sample_to_message(_: &Self::Sample) -> Self::Message {
-        todo!("Needs to be implemented")
+    fn sample_to_message(sample: &Self::Sample) -> Self::Message {
+        match sample {
+            1 => IsingMessage(1e30f64),
+            -1 => IsingMessage(-1e30f64),
+            other => panic!("Unsupported sample value {other}, must be ether 1 or -1. It is a bug, please open an issue"),
+        }
     }
 }
 
@@ -237,7 +303,7 @@ where
 ///
 /// # Arguments
 ///
-/// * `rng` - A thread-local generator of random numbers
+/// * `rng` - A generator of random numbers
 pub fn random_message_initializer(mut rng: impl Rng) -> impl FnMut() -> IsingMessage {
     let distr = Uniform::new(-1f64, 1f64);
     move || IsingMessage(distr.sample(&mut rng))

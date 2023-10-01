@@ -58,5 +58,8 @@ fn ising_2d_test() {
             );
         }
     }
-    assert!((calculated_up_prob - exact_up_prob).abs() < 1e-4);
+    assert!(
+        (calculated_up_prob - exact_up_prob).abs() < 1e-4,
+        "{calculated_up_prob}, {exact_up_prob}"
+    );
 }
