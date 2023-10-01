@@ -109,8 +109,13 @@ fn main() {
     let (is_converged, iterations_number, discrepancy) = match info {
         Ok(info) => (true, info.iterations_number, info.final_discrepancy),
         Err(err) => {
-            if let FGError::MessagePassingError(info) = err {
-                (false, info.iterations_number, info.final_discrepancy)
+            if let FGError::MessagePassingError {
+                iterations_number,
+                final_discrepancy,
+                ..
+            } = err
+            {
+                (false, iterations_number, final_discrepancy)
             } else {
                 unreachable!()
             }

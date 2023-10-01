@@ -46,11 +46,6 @@ pub(super) fn log_sum_exponents(x: f64, y: f64) -> f64 {
     }
 }
 
-#[inline(always)]
-pub(super) fn logit(x: f64) -> f64 {
-    f64::ln(x) - f64::ln(1f64 - x)
-}
-
 // ------------------------------------------------------------------------------------------
 
 pub trait IsingMessagePassingType {

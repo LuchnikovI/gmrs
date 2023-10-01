@@ -17,7 +17,24 @@ use rand::Rng;
 /// Possible factor graph errors
 pub enum FGError {
     /// Message passing error when method does not converge
-    MessagePassingError(MessagePassingError),
+    MessagePassingError {
+        /// Number of iterations past
+        iterations_number: usize,
+
+        /// Final discrepancy between last and previous iteration messages maximal across variables and factors
+        final_discrepancy: f64,
+
+        /// Convergence threshold: discrepancy must be smaller than the threshold for convergence
+        threshold: f64,
+    },
+
+    SamplingError {
+        /// Number of successfully sampled variables
+        variables_number: usize,
+
+        ///  Total number of message passing iterations passed
+        total_iterations_number: usize,
+    },
 
     /// ID (index) of a variable is out of range of variables list
     OutOfRangeVariable(usize, usize),
@@ -26,48 +43,35 @@ pub enum FGError {
 impl Display for FGError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FGError::MessagePassingError(err) => write!(f, "{err}"),
+            FGError::MessagePassingError {
+                iterations_number,
+                final_discrepancy,
+                threshold,
+            } => write!(
+                f,
+                "Messaged passing has not converged after {} iterations, discrepancy threshold: {}, last iteration discrepancy: {}",
+                iterations_number,
+                threshold,
+                final_discrepancy,
+            ),
             FGError::OutOfRangeVariable(size, pos) => write!(
                 f,
                 "ID (index) of a variable {} is out of range of [0..{}] variables",
                 pos, size,
             ),
+            FGError::SamplingError { variables_number, total_iterations_number } => {
+                write!(
+                    f,
+                    "While sampling {}-th variable procedure has failed. Total number of message passing iteration passed before the failure: {}",
+                    variables_number + 1,
+                    total_iterations_number,
+                )
+            }
         }
     }
 }
 
-impl From<MessagePassingError> for FGError {
-    fn from(value: MessagePassingError) -> Self {
-        FGError::MessagePassingError(value)
-    }
-}
-
-/// Error info that appears if message passing does not converge
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct MessagePassingError {
-    /// Number of iterations past
-    pub iterations_number: usize,
-
-    /// Final discrepancy between last and previous iteration messages maximal across variables and factors
-    pub final_discrepancy: f64,
-
-    /// Convergence threshold: discrepancy must be smaller than the threshold for convergence
-    pub threshold: f64,
-}
-
-impl Display for MessagePassingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Messaged passing has not converged after {} iterations, discrepancy threshold: {}, last iteration discrepancy: {}",
-            self.iterations_number,
-            self.threshold,
-            self.final_discrepancy,
-        )
-    }
-}
-
-impl Error for MessagePassingError {}
+impl Error for FGError {}
 
 /// Info that appears if message passing converges
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -95,6 +99,19 @@ impl Display for MessagePassingInfo {
 }
 
 pub type FGResult<T> = Result<T, FGError>;
+
+/// Info that appears if sampling procedure succeed
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SamplingInfo<S> {
+    /// Samples
+    pub samples: Vec<S>,
+
+    /// Number of message passing iterations per variable
+    pub iterations_per_variable: Vec<usize>,
+
+    /// Total number of message passing iterations passed
+    pub total_iterations_number: usize,
+}
 
 // ------------------------------------------------------------------------------------------
 
@@ -194,12 +211,11 @@ where
             }
             last_discrepancy = max_discrepancy;
         }
-        Err(MessagePassingError {
+        Err(FGError::MessagePassingError {
             iterations_number: max_iterations_number,
             threshold,
             final_discrepancy: last_discrepancy,
-        }
-        .into())
+        })
     }
 
     /// Computes marginals for all variables
@@ -315,15 +331,39 @@ where
         threshold: f64,
         parameters: &F::Parameters,
         rng: &mut impl Rng,
-    ) -> FGResult<Vec<V::Sample>> {
+    ) -> FGResult<SamplingInfo<V::Sample>> {
         let variables_number = self.variables.len();
         let mut samples = Vec::with_capacity(variables_number);
+        let mut total_iterations_number = 0;
+        let mut iterations_per_variable = Vec::with_capacity(self.variables.len());
         for i in 0..variables_number {
             let sample = self.variables.get_mut(i).unwrap().sample(rng);
             samples.push(sample);
             self.freeze_variable(&sample, i).unwrap();
-            self.run_message_passing_parallel(max_iterations_number, threshold, parameters)?;
+            match self.run_message_passing_parallel(max_iterations_number, threshold, parameters) {
+                Ok(info) => {
+                    total_iterations_number += info.iterations_number;
+                    iterations_per_variable.push(info.iterations_number);
+                }
+                Err(info) => {
+                    if let FGError::MessagePassingError {
+                        iterations_number, ..
+                    } = info
+                    {
+                        return Err(FGError::SamplingError {
+                            variables_number: i,
+                            total_iterations_number: total_iterations_number + iterations_number,
+                        });
+                    } else {
+                        unreachable!()
+                    }
+                }
+            }
         }
-        Ok(samples)
+        Ok(SamplingInfo {
+            samples,
+            iterations_per_variable,
+            total_iterations_number,
+        })
     }
 }

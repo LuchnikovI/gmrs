@@ -1,4 +1,5 @@
 mod common;
+mod max_product;
 mod sum_product;
 
 pub use common::{
