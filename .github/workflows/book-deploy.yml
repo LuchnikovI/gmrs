@@ -29,6 +29,10 @@ jobs:
         git update-ref -d refs/heads/gh-pages
         rm -rf *
         mv ../book/* .
+        touch CNAME
+        cat > CNAME << EOF
+        graphmodelsrs.org
+        EOF
         git add .
         git commit -m "Deploy $GITHUB_SHA to gh-pages"
         git push --force --set-upstream origin gh-pages
