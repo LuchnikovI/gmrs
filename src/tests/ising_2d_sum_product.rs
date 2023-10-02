@@ -1,4 +1,5 @@
 use super::utils::field2prob;
+use crate::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::{rngs::StdRng, SeedableRng};
 
@@ -16,7 +17,8 @@ fn ising_2d_test() {
     let coupling = -0.7123;
     let magnetic_fields = 0.;
     let error = 1e-10f64;
-    let decay = 0.5;
+    let factor_scheduler = get_standard_factor_scheduler(0.5);
+    let variable_scheduler = get_standard_variable_scheduler(0.5);
     let rng = StdRng::seed_from_u64(42);
     let mut initializer = random_message_initializer(rng);
     let mut fgb = new_ising_builder::<SumProduct>(size * size, 2 * size * size);
@@ -38,7 +40,7 @@ fn ising_2d_test() {
     }
     let mut fg = fgb.build();
     let _ = fg
-        .run_message_passing_parallel(10000, error, &decay)
+        .run_message_passing_parallel(10000, 0, error, &factor_scheduler, &variable_scheduler)
         .unwrap();
     let variable_marginals = fg.variable_marginals();
     let calculated_up_prob = if variable_marginals[0][0] > variable_marginals[0][1] {

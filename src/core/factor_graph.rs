@@ -13,30 +13,30 @@ use rand::Rng;
 
 // ------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-/// Possible factor graph errors
+#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Errors that could appear in factor graph methods
 pub enum FGError {
-    /// Message passing error when method does not converge
+    /// Message passing error appears when a message passing does not converge
     MessagePassingError {
-        /// Number of iterations past
+        /// Number of iterations past before failure
         iterations_number: usize,
 
-        /// Final discrepancy between last and previous iteration messages maximal across variables and factors
-        final_discrepancy: f64,
+        /// Final discrepancy between last and previous iteration's messages maximized across variables and factors
+        last_discrepancy: f64,
 
-        /// Convergence threshold: discrepancy must be smaller than the threshold for convergence
-        threshold: f64,
+        /// Dynamics of discrepancy before failure
+        discrepancy_dynamics: Vec<f64>,
     },
 
     SamplingError {
         /// Number of successfully sampled variables
         variables_number: usize,
 
-        ///  Total number of message passing iterations passed
+        ///  Total number of message passing iterations passed before failure
         total_iterations_number: usize,
     },
 
-    /// ID (index) of a variable is out of range of variables list
+    /// Index of a variable is out of range
     OutOfRangeVariable(usize, usize),
 }
 
@@ -45,18 +45,17 @@ impl Display for FGError {
         match self {
             FGError::MessagePassingError {
                 iterations_number,
-                final_discrepancy,
-                threshold,
+                last_discrepancy,
+                discrepancy_dynamics: _,
             } => write!(
                 f,
-                "Messaged passing has not converged after {} iterations, discrepancy threshold: {}, last iteration discrepancy: {}",
+                "Messaged passing has not converged after {} iterations, last iteration discrepancy: {}",
                 iterations_number,
-                threshold,
-                final_discrepancy,
+                last_discrepancy,
             ),
             FGError::OutOfRangeVariable(size, pos) => write!(
                 f,
-                "ID (index) of a variable {} is out of range of [0..{}] variables",
+                "Index of a variable {} is out of range of [0..{}] variables",
                 pos, size,
             ),
             FGError::SamplingError { variables_number, total_iterations_number } => {
@@ -73,27 +72,25 @@ impl Display for FGError {
 
 impl Error for FGError {}
 
-/// Info that appears if message passing converges
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// Message passing algorithm information
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessagePassingInfo {
-    /// Number of iterations past
+    /// Number of iterations past before convergence
     pub iterations_number: usize,
 
-    /// Final discrepancy between last and previous iteration messages maximal across variables and factors
-    pub final_discrepancy: f64,
+    /// Final discrepancy between last and previous iteration's messages maximized across variables and factors
+    pub last_discrepancy: f64,
 
-    /// Convergence threshold: discrepancy must be smaller than the threshold for convergence
-    pub threshold: f64,
+    /// Dynamics of discrepancy before failure
+    pub discrepancy_dynamics: Vec<f64>,
 }
 
 impl Display for MessagePassingInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Messaged passing has converged after {} iterations, discrepancy threshold: {}, last iteration discrepancy: {}",
-            self.iterations_number,
-            self.threshold,
-            self.final_discrepancy,
+            "Messaged passing has converged after {} iterations, last iteration discrepancy: {}",
+            self.iterations_number, self.last_discrepancy,
         )
     }
 }
@@ -103,10 +100,10 @@ pub type FGResult<T> = Result<T, FGError>;
 /// Info that appears if sampling procedure succeed
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SamplingInfo<S> {
-    /// Samples
+    /// Generated samples
     pub samples: Vec<S>,
 
-    /// Number of message passing iterations per variable
+    /// Number of passed message passing iterations per variable
     pub iterations_per_variable: Vec<usize>,
 
     /// Total number of message passing iterations passed
@@ -155,37 +152,51 @@ where
         self.variables.iter().map(|x| x.degree()).collect()
     }
 
-    /// Returns degree (number of adjoint factors) of each factor
+    /// Returns degree (number of adjoint variables) of each factor
     /// in order they were added to a factor graph
     #[inline]
     pub fn get_factors_degrees(&self) -> Vec<usize> {
         self.factors.iter().map(|x| x.degree()).collect()
     }
 
-    /// Runs a message passing algorithm in parallel
+    /// Runs a message passing algorithm in parallel. Typically, it is
+    /// a fixed point iteration method targeted on achieving an equilibrium
+    /// configuration of messages. This method mutates a factor graph
+    /// since it updates messages that are stored internally.
     ///
     /// # Arguments
     ///
-    /// * `max_iterations_number` - A maximal number of iterations
-    /// * `threshold` - A threshold specifying the convergence criterion: if
-    ///     the discrepancy between last and previous iteration messages maximal
-    ///     across variables and factors is smaller than this threshold,
-    ///     message passing is converged
-    /// * `parameters` - Hyper parameters of message passing
+    /// * `max_iterations_number` - A maximal number of iterations, if a process
+    ///     does not converge before reaching this number of iterations, it fails
+    /// * `min_iterations_number` - A minimal number of iterations that is performed
+    ///     disregards reaching the convergence criterion. It could be useful
+    ///     for example when one performs belief propagation with temperature annealing
+    /// * `threshold` - A threshold specifying the convergence criterion. A process
+    ///     is considered as successful if the discrepancy between two subsequent
+    ///     messages configurations is less than the threshold
+    /// * `factor_scheduler` - A scheduler of a factor's messages update rule hyper-parameters.
+    ///     It takes an iteration number (starts from 0) and return hyper-parameters.
+    /// * `variable_scheduler` - A scheduler of a variable's messages update rule hyper-parameters.
+    ///     It takes an iteration number (starts from 0) and return hyper-parameters.
     #[inline]
     pub fn run_message_passing_parallel(
         &mut self,
         max_iterations_number: usize,
+        min_iterations_number: usize,
         threshold: f64,
-        parameters: &F::Parameters,
+        factor_scheduler: &impl Fn(usize) -> F::Parameters,
+        variable_scheduler: &impl Fn(usize) -> V::Parameters,
     ) -> FGResult<MessagePassingInfo> {
         let mut last_discrepancy = f64::MAX;
+        let mut discrepancy_dynamics = Vec::with_capacity(max_iterations_number);
         for i in 0..max_iterations_number {
+            let factor_parameters = factor_scheduler(i);
+            let variable_parameters = variable_scheduler(i);
             let factors_discrepancy = self
                 .factors
                 .par_iter_mut()
                 .map(|factor| {
-                    factor.eval_messages(parameters);
+                    factor.eval_messages(&factor_parameters);
                     let max_discrepancy = factor.eval_discrepancy();
                     factor.send_messages();
                     max_discrepancy
@@ -195,26 +206,27 @@ where
                 .variables
                 .par_iter_mut()
                 .map(|variable| {
-                    variable.eval_messages();
+                    variable.eval_messages(&variable_parameters);
                     let max_discrepancy = variable.eval_discrepancy();
                     variable.send_messages();
                     max_discrepancy
                 })
                 .reduce(|| 0f64, |x, y| x.max(y));
             let max_discrepancy = factors_discrepancy.max(variables_discrepancy);
-            if max_discrepancy < threshold {
+            discrepancy_dynamics.push(max_discrepancy);
+            last_discrepancy = max_discrepancy;
+            if (max_discrepancy < threshold) && (i + 1 >= min_iterations_number) {
                 return Ok(MessagePassingInfo {
                     iterations_number: i,
-                    threshold,
-                    final_discrepancy: max_discrepancy,
+                    discrepancy_dynamics,
+                    last_discrepancy,
                 });
             }
-            last_discrepancy = max_discrepancy;
         }
         Err(FGError::MessagePassingError {
             iterations_number: max_iterations_number,
-            threshold,
-            final_discrepancy: last_discrepancy,
+            discrepancy_dynamics,
+            last_discrepancy,
         })
     }
 
@@ -310,12 +322,17 @@ where
     /// # Arguments
     ///
     /// * `max_iterations_number` - A maximal number of iterations in a message passing algorithm
-    /// * `threshold` - A threshold specifying the convergence criterion: if
-    ///     the discrepancy between last and previous iteration messages maximal
-    ///     across variables and factors is smaller than this threshold,
-    ///     message passing is converged
-    /// * `parameters` - Hyper parameters of message passing
+    /// * `min_iterations_number` - A minimal number of iterations that is performed
+    ///     disregards reaching the convergence criterion. It could be useful
+    ///     for example when one performs belief propagation with temperature annealing
+    /// * `threshold` - A threshold specifying the convergence criterion. A process
+    ///     is considered as successful if the discrepancy between two subsequent
+    ///     messages configurations is less than the threshold
     /// * `rng` - A random numbers generator
+    /// * `factor_scheduler` - A scheduler of a factor's messages update rule hyper-parameters.
+    ///     It takes an iteration number (starts from 0) and return hyper-parameters.
+    /// * `variable_scheduler` - A scheduler of a variable's messages update rule hyper-parameters.
+    ///     It takes an iteration number (starts from 0) and return hyper-parameters.
     ///
     /// # Notes
     ///
@@ -328,9 +345,11 @@ where
     pub fn sample(
         &mut self,
         max_iterations_number: usize,
+        min_iterations_number: usize,
         threshold: f64,
-        parameters: &F::Parameters,
         rng: &mut impl Rng,
+        factor_scheduler: &impl Fn(usize) -> F::Parameters,
+        variable_scheduler: &impl Fn(usize) -> V::Parameters,
     ) -> FGResult<SamplingInfo<V::Sample>> {
         let variables_number = self.variables.len();
         let mut samples = Vec::with_capacity(variables_number);
@@ -340,7 +359,13 @@ where
             let sample = self.variables.get_mut(i).unwrap().sample(rng);
             samples.push(sample);
             self.freeze_variable(&sample, i).unwrap();
-            match self.run_message_passing_parallel(max_iterations_number, threshold, parameters) {
+            match self.run_message_passing_parallel(
+                max_iterations_number,
+                min_iterations_number,
+                threshold,
+                factor_scheduler,
+                variable_scheduler,
+            ) {
                 Ok(info) => {
                     total_iterations_number += info.iterations_number;
                     iterations_per_variable.push(info.iterations_number);

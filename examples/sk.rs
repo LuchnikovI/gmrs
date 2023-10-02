@@ -1,6 +1,7 @@
 use clap::Parser;
 use gmrs::{
     core::FGError,
+    ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler},
     ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct},
 };
 use rand::thread_rng;
@@ -63,8 +64,6 @@ fn main() {
     let beta = cli.beta;
     // threshold of the convergence criterion
     let error = cli.threshold;
-    // sum-product decay hyper parameter
-    let decay = cli.decay;
     // maximal number of message passing iterations
     let max_iter = cli.max_iter;
     // mean value of coupling constants
@@ -73,6 +72,10 @@ fn main() {
     let std = beta / (spins_number as f64).sqrt();
     // distribution of coupling constants
     let distr = Normal::new(mu, std).unwrap();
+    // a scheduler for factor's messages update rules
+    let factor_scheduler = get_standard_factor_scheduler(0.5);
+    // a scheduler for variable's messages update rules
+    let variable_scheduler = get_standard_variable_scheduler(0.5);
     // this generator is used to sample coupling constants
     let mut rng_couplings = thread_rng();
     // messages initializer
@@ -93,7 +96,8 @@ fn main() {
         }
     }
     let mut fg = fgb.build();
-    let info = fg.run_message_passing_parallel(max_iter, error, &decay);
+    let info =
+        fg.run_message_passing_parallel(max_iter, 0, error, &factor_scheduler, &variable_scheduler);
     let variable_marginals = fg.variable_marginals();
     let factors = fg.factors();
     let factor_marginals = fg.factor_marginals();
@@ -107,15 +111,15 @@ fn main() {
     bethe_free_entropy /= spins_number as f64;
     let replica_symmetric_free_entropy = rs_sk_free_entropy(beta);
     let (is_converged, iterations_number, discrepancy) = match info {
-        Ok(info) => (true, info.iterations_number, info.final_discrepancy),
+        Ok(info) => (true, info.iterations_number, info.last_discrepancy),
         Err(err) => {
             if let FGError::MessagePassingError {
                 iterations_number,
-                final_discrepancy,
+                last_discrepancy,
                 ..
             } = err
             {
-                (false, iterations_number, final_discrepancy)
+                (false, iterations_number, last_discrepancy)
             } else {
                 unreachable!()
             }

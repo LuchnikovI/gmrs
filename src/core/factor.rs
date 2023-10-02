@@ -6,21 +6,20 @@ pub trait Factor: Clone + Debug + Send {
     type Message: Message;
     /// Message passing hyper parameters
     type Parameters: Sync;
-    /// Type representing a marginal distribution
+    /// Factor marginal distribution type
     type Marginal;
 
-    /// Creates a factor of unit degree that produces a given message
+    /// Creates a unit degree factor that produces a given message
     ///
     /// # Arguments
     ///
-    /// * `message` - A message that is converted to a factor
+    /// * `message` - A message
     ///
     /// # Note
     ///
-    /// This method is useful to fix values of variables e.g. to
-    /// represent conditional distributions by a factor graph. By this
-    /// method one can create a unit degree factor that sends a message
-    /// fixing a variable value
+    /// This method primarily use case is creating a factor that
+    /// fixes a variable value by constantly sending the same
+    /// 'strong' message to a variable during message passing
     fn from_message(message: &Self::Message) -> Self;
 
     /// Returns a degree of a factor (number of adjoint variables)
@@ -32,7 +31,7 @@ pub trait Factor: Clone + Debug + Send {
     ///
     /// * `src` - Messages received from adjoint variables previously
     /// * `dst` - Destinations where to send messages
-    /// * `parameters` - Hyper parameters of message passing
+    /// * `parameters` - Hyper parameters of message passing rules
     ///
     /// # Notes
     ///
@@ -40,7 +39,9 @@ pub trait Factor: Clone + Debug + Send {
     /// dst[0] corresponds to the message receiver of the first variable,
     /// src[1] corresponds to the message received from the second variable,
     /// dst[1] corresponds to the message receiver of the second variable,
-    /// etc
+    /// etc.
+    /// This method defines the logic of how a factor transforms received
+    /// messages to messages that it sends to adjoint variables
     fn send_messages(
         &self,
         src: &[Self::Message],
@@ -48,18 +49,19 @@ pub trait Factor: Clone + Debug + Send {
         parameters: &Self::Parameters,
     );
 
-    /// Computes a marginal of a factor
+    /// Computes a joint marginal of adjoint factor variables
     ///
     /// # Arguments
     ///
     /// * `messages` - Messages received from adjoint variables previously
     fn marginal(&self, messages: &[Self::Message]) -> Self::Marginal;
 
-    /// Returns a factor as a standalone object
+    /// Returns a factor as a standalone object, e.g. a tensor psi(x_1, ..., x_n)
     ///
     /// # Notes
     ///
-    /// The most natural data structure representing a standalone factor
-    /// is that used to represent a marginal
+    /// Do not be confused by the returned type,
+    /// the most natural data structure representing a standalone factor
+    /// is the same used to represent a marginal
     fn factor(&self) -> Self::Marginal;
 }

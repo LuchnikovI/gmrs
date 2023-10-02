@@ -57,6 +57,7 @@ impl Variable for FakeVariable {
     type Message = FakeMessage;
     type Marginal = ();
     type Sample = usize;
+    type Parameters = ();
 
     #[inline(always)]
     fn new() -> Self {
@@ -64,7 +65,7 @@ impl Variable for FakeVariable {
     }
 
     #[inline(always)]
-    fn send_messages(&self, _: &[Self::Message], _: &mut [Self::Message]) {
+    fn send_messages(&self, _: &[Self::Message], _: &mut [Self::Message], _: &()) {
         unimplemented!()
     }
 

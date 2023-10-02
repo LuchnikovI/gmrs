@@ -4,11 +4,13 @@ use crate::core::message::Message;
 use std::fmt::Debug;
 
 pub trait Variable: Clone + Debug + Send {
-    /// Message type
+    /// Type of a message
     type Message: Message;
+    /// Message passing hyper parameters
+    type Parameters: Sync;
     /// Type representing a marginal distribution
     type Marginal;
-    /// Type representing a sample
+    /// Type representing a variable sample
     type Sample: Copy;
 
     /// Create a new variable instance
@@ -18,8 +20,10 @@ pub trait Variable: Clone + Debug + Send {
     ///
     /// # Arguments
     ///
+    ///
     /// * `src` - Messages received from adjoint factors previously
     /// * `dst` - Destinations where to send messages
+    /// * `parameters` - Hyper parameters of message passing rules
     ///
     /// # Notes
     ///
@@ -27,8 +31,15 @@ pub trait Variable: Clone + Debug + Send {
     /// dst[0] corresponds to the message receiver of the first factor,
     /// src[1] corresponds to the message received from the second factor,
     /// dst[1] corresponds to the message receiver of the second factor,
-    /// etc
-    fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message]);
+    /// etc.
+    /// This method defines the logic of how a variable transforms received messages
+    /// to messages that it sends to adjoint variables
+    fn send_messages(
+        &self,
+        src: &[Self::Message],
+        dst: &mut [Self::Message],
+        parameters: &Self::Parameters,
+    );
 
     /// Computes a marginal of a variable
     ///
@@ -54,8 +65,11 @@ pub trait Variable: Clone + Debug + Send {
     ///
     /// # Notes
     ///
-    /// This method is useful to fix a value of a variable after sampling.
-    /// One can make a unit degree factor node sending this message that
-    /// sets a variable to the sampled value
+    /// This method typically is used together with `from_message`
+    /// method of the Factor trait in order to create a factor that
+    /// fixes a variable value by the sampled one. It is done in
+    /// two steps: (1) one creates a message that fixes a variable by
+    /// calling the given method, (2) one creates the factor that produces
+    /// a created message by calling a `from_message` method
     fn sample_to_message(sample: &Self::Sample) -> Self::Message;
 }

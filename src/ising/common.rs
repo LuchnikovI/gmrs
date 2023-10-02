@@ -4,6 +4,8 @@ use rand::Rng;
 use rand_distr::{Distribution, Uniform};
 use std::{fmt::Debug, marker::PhantomData};
 
+use super::IsingFactorHyperParameters;
+
 // ------------------------------------------------------------------------------------------
 
 /// Ising message
@@ -49,7 +51,6 @@ pub(super) fn log_sum_exponents(x: f64, y: f64) -> f64 {
 // ------------------------------------------------------------------------------------------
 
 pub trait IsingMessagePassingType {
-    type Parameters: Sync;
     fn factor_message_update(
         message: IsingMessage,
         prev_message: IsingMessage,
@@ -57,7 +58,7 @@ pub trait IsingMessagePassingType {
         log_p_ou_id: f64,
         log_p_od_iu: f64,
         log_p_od_id: f64,
-        parameters: &Self::Parameters,
+        parameters: &IsingFactorHyperParameters,
     ) -> IsingMessage;
 
     fn sample(messages: &[IsingMessage], rng: &mut impl Rng) -> i8;
@@ -108,8 +109,8 @@ where
     T: IsingMessagePassingType + Clone + Debug + Send,
 {
     type Message = IsingMessage;
-    type Parameters = T::Parameters;
     type Marginal = ArrayD<f64>;
+    type Parameters = IsingFactorHyperParameters;
 
     #[inline(always)]
     fn from_message(message: &Self::Message) -> Self {
@@ -129,7 +130,7 @@ where
         &self,
         src: &[Self::Message],
         dst: &mut [Self::Message],
-        parameters: &T::Parameters,
+        parameters: &IsingFactorHyperParameters,
     ) {
         match self {
             IsingFactor::Coupling {
@@ -237,6 +238,7 @@ where
 {
     type Message = IsingMessage;
     type Marginal = Array1<f64>;
+    type Parameters = f64;
     type Sample = i8;
 
     #[inline(always)]
@@ -245,10 +247,11 @@ where
     }
 
     #[inline(always)]
-    fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message]) {
+    fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message], parameters: &f64) {
         let sum_all: f64 = src.iter().map(|x| x.0).sum();
         for (d, s) in dst.iter_mut().zip(src) {
-            d.0 = sum_all - s.0;
+            let prev_message = d.0;
+            d.0 = (1f64 - parameters) * (sum_all - s.0) + parameters * prev_message;
         }
     }
 

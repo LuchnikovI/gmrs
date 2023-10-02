@@ -1,6 +1,7 @@
 use super::common::{
     log_sigmoid, log_sum_exponents, sigmoid, IsingMessage, IsingMessagePassingType,
 };
+use crate::ising::IsingFactorHyperParameters;
 use rand_distr::Uniform;
 
 /// Sum product type of message passing
@@ -8,7 +9,6 @@ use rand_distr::Uniform;
 pub struct SumProduct;
 
 impl IsingMessagePassingType for SumProduct {
-    type Parameters = f64;
     #[inline(always)]
     fn factor_message_update(
         message: IsingMessage,
@@ -17,15 +17,17 @@ impl IsingMessagePassingType for SumProduct {
         log_p_ou_id: f64,
         log_p_od_iu: f64,
         log_p_od_id: f64,
-        parameters: &Self::Parameters,
+        parameters: &IsingFactorHyperParameters,
     ) -> IsingMessage {
         let nu_up = log_sigmoid(message.0);
         let nu_down = log_sigmoid(-message.0);
+        let gamma = parameters.gamma;
+        let beta = parameters.beta;
         IsingMessage(
-            (1f64 - parameters)
-                * (log_sum_exponents(log_p_ou_iu + nu_up, log_p_ou_id + nu_down)
-                    - log_sum_exponents(log_p_od_iu + nu_up, log_p_od_id + nu_down))
-                + parameters * prev_message.0,
+            (1f64 - gamma)
+                * (log_sum_exponents(beta * log_p_ou_iu + nu_up, beta * log_p_ou_id + nu_down)
+                    - log_sum_exponents(beta * log_p_od_iu + nu_up, beta * log_p_od_id + nu_down))
+                + gamma * prev_message.0,
         )
     }
 

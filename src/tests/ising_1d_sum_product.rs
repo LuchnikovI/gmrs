@@ -1,4 +1,5 @@
 use super::utils::field2prob;
+use crate::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::thread_rng;
 
@@ -36,9 +37,10 @@ fn ising_1d_test() {
     let coupling = 1.1f64;
     let magnetic_field = 0.3f64;
     let error = 1e-10f64;
-    let decay = 0f64;
     let mut fgb = new_ising_builder::<SumProduct>(spins_number, spins_number - 1);
     let mut initializer = random_message_initializer(thread_rng());
+    let factor_scheduler = get_standard_factor_scheduler(0.5);
+    let variable_scheduler = get_standard_variable_scheduler(0.5);
     fgb.add_factor(
         IsingFactor::new(0f64, 0f64, magnetic_field),
         &[spins_number - 2, spins_number - 1],
@@ -55,7 +57,7 @@ fn ising_1d_test() {
     }
     let mut fg = fgb.build();
     let _ = fg
-        .run_message_passing_parallel(1000, error, &decay)
+        .run_message_passing_parallel(1000, 0, error, &factor_scheduler, &variable_scheduler)
         .unwrap();
     let variable_marginals = fg.variable_marginals();
     let (exact_mid_spin_prob_up, exact_bound_spin_prob_up) =
