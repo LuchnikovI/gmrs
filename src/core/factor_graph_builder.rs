@@ -5,15 +5,15 @@ use crate::{
     core::variable::Variable, core::variable_node::VariableNode,
 };
 
-// error ------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Possible factor graph builder errors
+/// Errors that could appear in factor graph builder's methods
 pub enum FGBuilderError {
     /// Degree of a factor does not match a number of adjacent variables
     DegreeError(usize, Vec<usize>),
 
-    /// ID (index) of a variable is out of range of variables list
+    /// Index of a variable is out of range
     OutOfRangeVariable(usize, usize),
 }
 
@@ -38,6 +38,7 @@ impl Display for FGBuilderError {
 
 impl Error for FGBuilderError {}
 
+/// Factor graph builder's methods result type
 pub type FGBuilderResult<T> = Result<T, FGBuilderError>;
 
 // public methods ---------------------------------------------------------------------------
@@ -69,6 +70,19 @@ where
     V: Variable<Message = F::Message>,
 {
     /// Creates an empty factor graph
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct};
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// let fgb = FactorGraphBuilder::<Factor, Variable>::new();
+    /// ```
     #[inline]
     pub fn new() -> Self {
         FactorGraphBuilder {
@@ -84,6 +98,19 @@ where
     ///
     /// * `variables_number` - A number of variables
     /// * `factors_capacity` - A number of factors we need to preallocate memory for
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct};
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// let fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 2);
+    /// ```
     #[inline]
     pub fn new_with_variables(variables_number: usize, factors_capacity: usize) -> Self {
         let variables: Vec<_> = from_fn(|| Some(VariableNode::new_disconnected()))
@@ -93,7 +120,21 @@ where
         FactorGraphBuilder { factors, variables }
     }
 
-    /// Adds a variable to a factor graph    
+    /// Adds a variable to a factor graph
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct};
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(0, 1);
+    /// fgb.add_variable();
+    /// ```
     #[inline]
     pub fn add_variable(&mut self) {
         self.variables.push(VariableNode::new_disconnected())
@@ -105,13 +146,38 @@ where
     ///
     /// * `factor` - A new factor
     /// * `var_indices` - Indices of adjoint variables
-    /// * `message_initializer` - A closure that initializes messages
+    /// * `message_initializer` - An object that initializes messages
     ///
     /// # Notes
     ///
     /// If number of `var_indices` does not match a factor degree, the method
     /// returns an error. If an index from `var_indices` is out of range of
     /// the variables list, the method returns an error
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Builder creation
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(10, 1);
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
+    ///    &[3, 8],
+    ///    &mut initializer,
+    /// );
+    /// ```
     #[inline]
     pub fn add_factor(
         &mut self,
@@ -160,6 +226,36 @@ where
     }
 
     /// Returns a factor graph
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Builder creation
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(10, 9);
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// for i in 0..9 {
+    ///    fgb.add_factor(
+    ///        IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
+    ///        &[i, i + 1],
+    ///        &mut initializer,
+    ///    );
+    /// }
+    ///
+    /// // Building a factor graph
+    /// let fg = fgb.build();
+    /// ```
     #[inline]
     pub fn build(mut self) -> FactorGraph<F, V> {
         for factor in &mut self.factors {

@@ -1,3 +1,4 @@
+/// Hyper-parameters of Ising's message passing algorithms
 #[derive(Debug, Clone, Copy)]
 pub struct IsingFactorHyperParameters {
     /// Inverse temperature

@@ -1,12 +1,13 @@
 use crate::core::message::Message;
 use std::fmt::Debug;
 
+/// A trait providing facto node's methods
 pub trait Factor: Clone + Debug + Send {
     /// Type of a message
     type Message: Message;
-    /// Message passing hyper parameters
+    /// Message passing hyper parameters' type
     type Parameters: Sync;
-    /// Factor marginal distribution type
+    /// Factor's marginal distribution type
     type Marginal;
 
     /// Creates a unit degree factor that produces a given message

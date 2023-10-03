@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+/// A trait providing message's methods
 pub trait Message: Debug + Copy + 'static {
     /// Evaluates a distance between messages
     ///

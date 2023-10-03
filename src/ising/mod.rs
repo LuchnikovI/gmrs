@@ -1,5 +1,6 @@
 mod common;
 mod max_product;
+/// A module providing schedulers for Ising's message passing algorithms
 pub mod schedulers;
 mod sum_product;
 

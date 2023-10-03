@@ -14,9 +14,9 @@ use rand::Rng;
 // ------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-/// Errors that could appear in factor graph methods
+/// Errors that could appear in factor graph's methods
 pub enum FGError {
-    /// Message passing error appears when a message passing does not converge
+    /// Message passing error appearing when a message passing does not converge
     MessagePassingError {
         /// Number of iterations past before failure
         iterations_number: usize,
@@ -72,7 +72,7 @@ impl Display for FGError {
 
 impl Error for FGError {}
 
-/// Message passing algorithm information
+/// Information returned after successful convergence of the a message passing procedure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessagePassingInfo {
     /// Number of iterations past before convergence
@@ -95,18 +95,19 @@ impl Display for MessagePassingInfo {
     }
 }
 
+/// Factor graph's methods result type
 pub type FGResult<T> = Result<T, FGError>;
 
-/// Info that appears if sampling procedure succeed
+/// Information returned after successful convergence of the sampling procedure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SamplingInfo<S> {
     /// Generated samples
     pub samples: Vec<S>,
 
-    /// Number of passed message passing iterations per variable
+    /// Number of message passing iterations per variable
     pub iterations_per_variable: Vec<usize>,
 
-    /// Total number of message passing iterations passed
+    /// Total number of message passing iterations
     pub total_iterations_number: usize,
 }
 
@@ -147,6 +148,31 @@ where
     V: Variable<Message = F::Message>,
 {
     /// Returns degree (number of adjoint factors) of each variable
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let fg = fgb.build();
+    /// assert_eq!(fg.get_variable_degrees(), vec![1, 1]);
+    /// ```
     #[inline]
     pub fn get_variable_degrees(&self) -> Vec<usize> {
         self.variables.iter().map(|x| x.degree()).collect()
@@ -154,8 +180,33 @@ where
 
     /// Returns degree (number of adjoint variables) of each factor
     /// in order they were added to a factor graph
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let fg = fgb.build();
+    /// assert_eq!(fg.get_factor_degrees(), vec![2]);
+    /// ```
     #[inline]
-    pub fn get_factors_degrees(&self) -> Vec<usize> {
+    pub fn get_factor_degrees(&self) -> Vec<usize> {
         self.factors.iter().map(|x| x.degree()).collect()
     }
 
@@ -178,6 +229,46 @@ where
     ///     It takes an iteration number (starts from 0) and return hyper-parameters.
     /// * `variable_scheduler` - A scheduler of a variable's messages update rule hyper-parameters.
     ///     It takes an iteration number (starts from 0) and return hyper-parameters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use gmrs::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// // Message passing schedulers
+    /// let factor_scheduler = get_standard_factor_scheduler(0.5);
+    /// let variable_scheduler = get_standard_variable_scheduler(0.5);
+    ///
+    /// // Message passing
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(4, 3);
+    /// for i in 0..3 {
+    ///     fgb.add_factor(
+    ///         IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
+    ///         &[i, 3],
+    ///         &mut initializer,
+    ///     );
+    /// }
+    /// let mut fg = fgb.build();
+    /// let _ = fg.run_message_passing_parallel(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// ```
     #[inline]
     pub fn run_message_passing_parallel(
         &mut self,
@@ -231,12 +322,114 @@ where
     }
 
     /// Computes marginals for all variables
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use gmrs::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// // Message passing schedulers
+    /// let factor_scheduler = get_standard_factor_scheduler(0.5);
+    /// let variable_scheduler = get_standard_variable_scheduler(0.5);
+    ///
+    /// // Message passing
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let mut fg = fgb.build();
+    /// let _ = fg.run_message_passing_parallel(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// // Validation
+    /// let marginals = fg.variable_marginals();
+    /// assert_eq!(marginals.len(), 2);
+    /// let p_ratio_spin_0_exact = (f64::exp(0.5) + f64::exp(0.5)) / (f64::exp(-1.5) + f64::exp(0.5));
+    /// let p_ratio_spin_0_found = marginals[0][0] / marginals[0][1];
+    /// assert!((p_ratio_spin_0_exact - p_ratio_spin_0_found).abs() < 1e-8);
+    /// let p_ratio_spin_1_exact = (f64::exp(0.5) + f64::exp(-1.5)) / (f64::exp(0.5) + f64::exp(0.5));
+    /// let p_ratio_spin_1_found = marginals[1][0] / marginals[1][1];
+    /// assert!((p_ratio_spin_1_exact - p_ratio_spin_1_found).abs() < 1e-8);
+    /// ```
     #[inline]
     pub fn variable_marginals(&self) -> Vec<V::Marginal> {
         self.variables.iter().map(|x| x.marginal()).collect()
     }
 
     /// Computes marginals for all factors
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use gmrs::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
+    /// use ndarray::array;
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// // Message passing schedulers
+    /// let factor_scheduler = get_standard_factor_scheduler(0.5);
+    /// let variable_scheduler = get_standard_variable_scheduler(0.5);
+    ///
+    /// // Message passing
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let mut fg = fgb.build();
+    /// let _ = fg.run_message_passing_parallel(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// // Validation
+    /// let marginals = fg.factor_marginals();
+    /// assert_eq!(marginals.len(), 1);
+    /// let mut exact_factor_marginal = array!(
+    ///     [
+    ///         [f64::exp(0.5), f64::exp(0.5)],
+    ///         [f64::exp(-1.5), f64::exp(0.5)],
+    ///     ]
+    /// );
+    /// exact_factor_marginal /= exact_factor_marginal.sum();
+    /// let dist = (exact_factor_marginal - &marginals[0])
+    ///     .iter()
+    ///     .map(|x| x.powf(2f64))
+    ///     .sum::<f64>()
+    ///     .sqrt();
+    /// assert!(dist < 1e-8);
+    /// ```
     #[inline]
     pub fn factor_marginals(&self) -> Vec<F::Marginal> {
         self.factors.iter().map(|x| x.marginal()).collect()
@@ -246,8 +439,63 @@ where
     ///
     /// # Notes
     ///
+    /// Do not be confused by the return type.
     /// The most natural data structure representing a standalone factor
     /// is that used to represent a marginal
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use gmrs::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
+    /// use ndarray::array;
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// // Message passing schedulers
+    /// let factor_scheduler = get_standard_factor_scheduler(0.5);
+    /// let variable_scheduler = get_standard_variable_scheduler(0.5);
+    ///
+    /// // Message passing
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let mut fg = fgb.build();
+    /// let _ = fg.run_message_passing_parallel(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// // Validation
+    /// let factors = fg.factors();
+    /// assert_eq!(factors.len(), 1);
+    /// let mut factor = array!(
+    ///     [
+    ///         [f64::exp(0.5), f64::exp(0.5)],
+    ///         [f64::exp(-1.5), f64::exp(0.5)],
+    ///     ]
+    /// );
+    /// let dist = (factor - &factors[0])
+    ///     .iter()
+    ///     .map(|x| x.powf(2f64))
+    ///     .sum::<f64>()
+    ///     .sqrt();
+    /// assert!(dist < 1e-8);
+    /// ```
     #[inline]
     pub fn factors(&self) -> Vec<F::Marginal> {
         self.factors.iter().map(|x| x.factor()).collect()
@@ -264,6 +512,57 @@ where
     ///
     /// One should not freeze one variable twice or more times. This
     /// could lead to nonsense result
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use gmrs::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// // Message passing schedulers
+    /// let factor_scheduler = get_standard_factor_scheduler(0.);
+    /// let variable_scheduler = get_standard_variable_scheduler(0.);
+    ///
+    /// // Message passing
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 2);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let mut fg = fgb.build();
+    /// fg.freeze_variable(&1, 1).unwrap();
+    /// let variable_degree = fg.get_variable_degrees();
+    /// let factor_degree = fg.get_factor_degrees();
+    /// assert_eq!(variable_degree, vec![1, 2]);
+    /// assert_eq!(factor_degree, vec![2, 1]);
+    /// let _ = fg.run_message_passing_parallel(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// // Validation
+    /// let marginals = fg.variable_marginals();
+    /// assert_eq!(marginals.len(), 2);
+    /// let p_ratio_spin_0_exact = f64::exp(2f64);
+    /// let p_ratio_spin_0_found = marginals[0][0] / marginals[0][1];
+    /// assert!((p_ratio_spin_0_exact - p_ratio_spin_0_found).abs() < 1e-8);
+    /// let p_down_spin_1_found = marginals[1][1];
+    /// assert!(p_down_spin_1_found.abs() < 1e-8);
+    /// ```
     #[inline]
     pub fn freeze_variable(&mut self, value: &V::Sample, var_index: usize) -> FGResult<()> {
         let message = V::sample_to_message(value);
@@ -317,7 +616,7 @@ where
         Ok(())
     }
 
-    /// Samples from a factor graph
+    /// Samples variables from a factor graph
     ///
     /// # Arguments
     ///
@@ -342,6 +641,67 @@ where
     /// method. Note also, that this method fixes all variables of a factor graph making
     /// them further unusable. To keep the initial graph simply clone it before running
     /// sampling
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+    /// use gmrs::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
+    /// use rand::thread_rng;
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// // Messages initializer
+    /// let rng = thread_rng();
+    /// let mut initializer = random_message_initializer(rng);
+    ///
+    /// // Message passing schedulers
+    /// let factor_scheduler = get_standard_factor_scheduler(0.);
+    /// let variable_scheduler = get_standard_variable_scheduler(0.);
+    ///
+    /// // Message passing
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 2);
+    /// fgb.add_factor(
+    ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
+    ///    &[0, 1],
+    ///    &mut initializer,
+    /// );
+    /// let mut fg = fgb.build();
+    /// let _ = fg.run_message_passing_parallel(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// // Sampling
+    /// let mut rng = thread_rng();
+    /// let sampling_info = fg.sample(
+    ///     100,
+    ///     0,
+    ///     1e-10,
+    ///     &mut rng,
+    ///     &factor_scheduler,
+    ///     &variable_scheduler,
+    /// ).unwrap();
+    ///
+    /// // Validation
+    ///
+    /// // Sampling adds fixing factor to each variable
+    /// let variable_degree = fg.get_variable_degrees();
+    /// let factor_degree = fg.get_factor_degrees();
+    /// assert_eq!(variable_degree, vec![2, 2]);
+    /// assert_eq!(factor_degree, vec![2, 1, 1]);
+    ///
+    /// let marginals = fg.variable_marginals();
+    /// let samples = sampling_info.samples;
+    /// assert!((marginals[0][((1 - samples[0]) / 2) as usize] - 1f64).abs() < 1e-8);
+    /// assert!((marginals[1][((1 - samples[1]) / 2) as usize] - 1f64).abs() < 1e-8);
+    /// ```
     pub fn sample(
         &mut self,
         max_iterations_number: usize,

@@ -3,7 +3,7 @@ use super::{
     IsingFactorHyperParameters,
 };
 
-/// Sum product type of message passing
+/// A max-product message passing type
 #[derive(Debug, Clone, Copy)]
 pub struct MaxProduct;
 

@@ -8,7 +8,7 @@ use super::IsingFactorHyperParameters;
 
 // ------------------------------------------------------------------------------------------
 
-/// Ising message
+/// An Ising factor graph's message type
 #[derive(Debug, Clone, Copy)]
 pub struct IsingMessage(pub f64);
 
@@ -50,6 +50,7 @@ pub(super) fn log_sum_exponents(x: f64, y: f64) -> f64 {
 
 // ------------------------------------------------------------------------------------------
 
+/// A trait containing message passing type specific methods
 pub trait IsingMessagePassingType {
     fn factor_message_update(
         message: IsingMessage,
@@ -67,9 +68,11 @@ pub trait IsingMessagePassingType {
 // ------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy)]
-/// Coupling Ising factor of the form
-/// exp ( coupling * s1 * s2 + first_spin_b * s1 + second_spin_b * s2 )
-/// or a unit degree factor containing a value determining an output message
+/// An Ising factor type. It is either a coupling factor of the form
+/// `exp ( coupling * s1 * s2 + first_spin_b * s1 + second_spin_b * s2 )`
+/// containing logarithms of factor's elements
+/// or a unit degree factor of the form `exp ( s * b )` containing a
+/// corresponding message `2 * b`
 pub enum IsingFactor<T: IsingMessagePassingType + ?Sized> {
     Coupling {
         marker: PhantomData<T>,
@@ -89,9 +92,21 @@ where
     ///
     /// # Arguments
     ///
-    /// * `coupling` - A coupling between spins
+    /// * `coupling` - A coupling magnitude
     /// * `first_spin_b` - A magnetic field acting on the first spin
     /// * `second_spin_b` - A magnetic field acting on the second spin
+    ///
+    /// # Notes
+    ///
+    /// A resulting factor has form `exp ( coupling * s1 * s2 + first_spin_b * s1 + second_spin_b * s2 )`
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::ising::{IsingFactor, MaxProduct};
+    ///
+    /// let ising_factor = IsingFactor::<MaxProduct>::new(0.5f64, 0.5f64, -0.5f64);
+    /// ```
     #[inline]
     pub fn new(coupling: f64, first_spin_b: f64, second_spin_b: f64) -> Self {
         IsingFactor::Coupling {
@@ -229,6 +244,7 @@ where
 
 // ------------------------------------------------------------------------------------------
 
+/// An Ising variable type
 #[derive(Debug, Clone, Copy)]
 pub struct IsingVariable<T: IsingMessagePassingType>(PhantomData<T>);
 
@@ -284,7 +300,24 @@ where
 /// # Arguments
 ///
 /// * `variables_number` - A number of variables
-/// * `factors_capacity` - A number of factors we need to preallocate memory for
+/// * `factors_capacity` - A number of factors
+///
+/// # Example
+/// ```
+/// use rand::thread_rng;
+/// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
+/// use gmrs::core::FactorGraphBuilder;
+///
+/// // Aliases to shorten types
+/// type Factor = IsingFactor<SumProduct>;
+/// type Variable = IsingVariable<SumProduct>;
+///
+/// // Messages initializer
+/// let rng = thread_rng();
+/// let mut initializer = random_message_initializer(rng);
+///
+/// let fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+/// ```
 pub fn new_ising_builder<T>(
     variables_number: usize,
     factors_capacity: usize,
@@ -295,13 +328,24 @@ where
     FactorGraphBuilder::new_with_variables(variables_number, factors_capacity)
 }
 
-/// Crates a new random ising message initializer.
-/// A created generator samples messages at random from
-/// a uniform distribution over [-1, 1].
+/// Crates a new random Ising message initializer.
+/// A created initializer samples messages at random from
+/// a uniform distribution over the segment [-1, 1].
 ///
 /// # Arguments
 ///
 /// * `rng` - A generator of random numbers
+///
+/// # Example
+///
+/// ```
+/// use rand::thread_rng;
+/// use gmrs::ising::random_message_initializer;
+///
+/// // Messages initializer
+/// let rng = thread_rng();
+/// let initializer = random_message_initializer(rng);
+/// ```
 pub fn random_message_initializer(mut rng: impl Rng) -> impl FnMut() -> IsingMessage {
     let distr = Uniform::new(-1f64, 1f64);
     move || IsingMessage(distr.sample(&mut rng))

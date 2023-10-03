@@ -3,6 +3,7 @@ use rand::Rng;
 use crate::core::message::Message;
 use std::fmt::Debug;
 
+/// A trait providing variable's methods
 pub trait Variable: Clone + Debug + Send {
     /// Type of a message
     type Message: Message;

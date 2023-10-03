@@ -4,7 +4,7 @@ use super::common::{
 use crate::ising::IsingFactorHyperParameters;
 use rand_distr::Uniform;
 
-/// Sum product type of message passing
+/// A sum-product message passing type
 #[derive(Debug, Clone, Copy)]
 pub struct SumProduct;
 
