@@ -1,27 +1,7 @@
-use super::utils::field2prob;
+use super::ising_utils::{exact_curie_weiss_free_entropy, exact_curie_weiss_up_probability};
 use crate::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::thread_rng;
-
-fn exact_curie_weiss_up_prob(coupling: f64, magnetic_field: f64, error: f64) -> f64 {
-    let f = |x| f64::tanh(coupling * x + magnetic_field);
-    let mut old_u = f64::MAX;
-    let mut new_u = f64::MIN;
-    while (old_u - new_u).abs() > error {
-        old_u = new_u;
-        new_u = f(old_u);
-    }
-    field2prob(f64::atanh(new_u))
-}
-
-fn entropy(p: f64) -> f64 {
-    -p * f64::ln(p) - (1f64 - p) * f64::ln(1f64 - p)
-}
-
-fn exact_free_entropy(coupling: f64, magnetic_field: f64, error: f64) -> f64 {
-    let m = 2f64 * exact_curie_weiss_up_prob(coupling, magnetic_field, error) - 1f64;
-    0.5f64 * coupling * m * m + magnetic_field * m + entropy((1f64 + m) / 2f64)
-}
 
 #[test]
 fn curie_weiss_test() {
@@ -53,7 +33,7 @@ fn curie_weiss_test() {
         .run_message_passing_parallel(10000, 0, error, &factor_scheduler, &variable_scheduler)
         .unwrap();
     let variable_marginals = fg.variable_marginals();
-    let exact_up_prob = exact_curie_weiss_up_prob(coupling, magnetic_field, error);
+    let exact_up_prob = exact_curie_weiss_up_probability(coupling, magnetic_field, error);
     assert!((variable_marginals[spins_number / 2][0] - exact_up_prob).abs() < 1e-2);
     let factors = fg.factors();
     let factor_marginals = fg.factor_marginals();
@@ -66,7 +46,7 @@ fn curie_weiss_test() {
     }
     assert!(
         (bethe_free_entropy / spins_number as f64
-            - exact_free_entropy(coupling, magnetic_field, error))
+            - exact_curie_weiss_free_entropy(coupling, magnetic_field, error))
         .abs()
             < 1e-2
     );

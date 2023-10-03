@@ -1,15 +1,7 @@
-use super::utils::field2prob;
+use super::ising_utils::exact_infinite_2d_ising_up_probability;
 use crate::ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler};
 use crate::ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct};
 use rand::{rngs::StdRng, SeedableRng};
-
-fn exact_up_probability(coupling: f64) -> f64 {
-    let spin = f64::powf(
-        1f64 - f64::powf(f64::sinh(2f64 * coupling), -4f64),
-        1f64 / 8f64,
-    );
-    field2prob(f64::atanh(spin))
-}
 
 #[test]
 fn ising_2d_test() {
@@ -48,7 +40,7 @@ fn ising_2d_test() {
     } else {
         variable_marginals[0][1]
     };
-    let exact_up_prob = exact_up_probability(coupling);
+    let exact_up_prob = exact_infinite_2d_ising_up_probability(coupling);
     for i in 0..size {
         for j in 0..size {
             assert!(
