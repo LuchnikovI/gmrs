@@ -170,7 +170,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
@@ -243,7 +243,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// for i in 0..9 {
     ///    fgb.add_factor(

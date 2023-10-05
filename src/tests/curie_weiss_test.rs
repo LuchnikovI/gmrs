@@ -11,7 +11,7 @@ fn curie_weiss_test() {
     let error = 1e-10f64;
     let factor_scheduler = get_standard_factor_scheduler(0.5);
     let variable_scheduler = get_standard_variable_scheduler(0.5);
-    let mut initializer = random_message_initializer(thread_rng());
+    let mut initializer = random_message_initializer(thread_rng(), -0.5, 0.5);
     let mut fgb =
         new_ising_builder::<SumProduct>(spins_number, (spins_number - 1) * spins_number / 2);
     for i in 0..spins_number {

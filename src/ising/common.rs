@@ -314,7 +314,7 @@ where
 ///
 /// // Messages initializer
 /// let rng = thread_rng();
-/// let mut initializer = random_message_initializer(rng);
+/// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
 ///
 /// let fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
 /// ```
@@ -330,11 +330,13 @@ where
 
 /// Crates a new random Ising message initializer.
 /// A created initializer samples messages at random from
-/// a uniform distribution over the segment [-1, 1].
+/// a uniform distribution over the segment [lower, upper].
 ///
 /// # Arguments
 ///
 /// * `rng` - A generator of random numbers
+/// * `lower` - A lower bound
+/// * `upper` - An upper bound
 ///
 /// # Example
 ///
@@ -344,9 +346,13 @@ where
 ///
 /// // Messages initializer
 /// let rng = thread_rng();
-/// let initializer = random_message_initializer(rng);
+/// let initializer = random_message_initializer(rng, -0.5, 0.5);
 /// ```
-pub fn random_message_initializer(mut rng: impl Rng) -> impl FnMut() -> IsingMessage {
-    let distr = Uniform::new(-1f64, 1f64);
+pub fn random_message_initializer(
+    mut rng: impl Rng,
+    lower: f64,
+    upper: f64,
+) -> impl FnMut() -> IsingMessage {
+    let distr = Uniform::new(lower, upper);
     move || IsingMessage(distr.sample(&mut rng))
 }

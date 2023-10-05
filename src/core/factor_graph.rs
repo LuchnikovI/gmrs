@@ -32,8 +32,14 @@ pub enum FGError {
         /// Number of successfully sampled variables
         variables_number: usize,
 
-        ///  Total number of message passing iterations passed before failure
+        /// Total number of message passing iterations passed before failure
         total_iterations_number: usize,
+
+        /// Final discrepancy just before failure
+        last_discrepancy: f64,
+
+        /// Failed variable discrepancy dynamics
+        discrepancy_dynamics: Vec<f64>,
     },
 
     /// Index of a variable is out of range
@@ -58,7 +64,7 @@ impl Display for FGError {
                 "Index of a variable {} is out of range of [0..{}] variables",
                 pos, size,
             ),
-            FGError::SamplingError { variables_number, total_iterations_number } => {
+            FGError::SamplingError { variables_number, total_iterations_number, .. } => {
                 write!(
                     f,
                     "While sampling {}-th variable procedure has failed. Total number of message passing iteration passed before the failure: {}",
@@ -162,7 +168,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
     /// fgb.add_factor(
@@ -194,7 +200,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
     /// fgb.add_factor(
@@ -244,7 +250,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// // Message passing schedulers
     /// let factor_scheduler = get_standard_factor_scheduler(0.5);
@@ -267,7 +273,6 @@ where
     ///     &factor_scheduler,
     ///     &variable_scheduler,
     /// ).unwrap();
-    ///
     /// ```
     #[inline]
     pub fn run_message_passing_parallel(
@@ -337,7 +342,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// // Message passing schedulers
     /// let factor_scheduler = get_standard_factor_scheduler(0.5);
@@ -391,7 +396,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// // Message passing schedulers
     /// let factor_scheduler = get_standard_factor_scheduler(0.5);
@@ -458,7 +463,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// // Message passing schedulers
     /// let factor_scheduler = get_standard_factor_scheduler(0.5);
@@ -527,7 +532,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// // Message passing schedulers
     /// let factor_scheduler = get_standard_factor_scheduler(0.);
@@ -656,7 +661,7 @@ where
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
-    /// let mut initializer = random_message_initializer(rng);
+    /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
     /// // Message passing schedulers
     /// let factor_scheduler = get_standard_factor_scheduler(0.);
@@ -732,12 +737,16 @@ where
                 }
                 Err(info) => {
                     if let FGError::MessagePassingError {
-                        iterations_number, ..
+                        iterations_number,
+                        last_discrepancy,
+                        discrepancy_dynamics,
                     } = info
                     {
                         return Err(FGError::SamplingError {
                             variables_number: i,
                             total_iterations_number: total_iterations_number + iterations_number,
+                            last_discrepancy,
+                            discrepancy_dynamics,
                         });
                     } else {
                         unreachable!()

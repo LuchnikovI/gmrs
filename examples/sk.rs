@@ -79,7 +79,7 @@ fn main() {
     // this generator is used to sample coupling constants
     let mut rng_couplings = thread_rng();
     // messages initializer
-    let mut initializer = random_message_initializer(thread_rng());
+    let mut initializer = random_message_initializer(thread_rng(), -0.5, 0.5);
 
     // -------------------------------------------------------------------------------------
 

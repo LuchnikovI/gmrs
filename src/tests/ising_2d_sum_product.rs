@@ -12,7 +12,7 @@ fn ising_2d_test() {
     let factor_scheduler = get_standard_factor_scheduler(0.5);
     let variable_scheduler = get_standard_variable_scheduler(0.5);
     let rng = StdRng::seed_from_u64(42);
-    let mut initializer = random_message_initializer(rng);
+    let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     let mut fgb = new_ising_builder::<SumProduct>(size * size, 2 * size * size);
     for i in 0..size {
         for j in 0..size {
