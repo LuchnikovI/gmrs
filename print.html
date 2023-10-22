@@ -1,0 +1,333 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>gmrs book</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Examples</li><li class="chapter-item expanded "><a href="guide/sk_example.html"><strong aria-hidden="true">1.</strong> Loopy belief propagation: Sherrington Kirkpatrick model's free entropy</a></li><li class="chapter-item expanded "><div><strong aria-hidden="true">2.</strong> Max-product message passing: maximum cut problem</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">3.</strong> Survey propagation: boolean satisfiability problem</div></li><li class="chapter-item expanded affix "><li class="part-title">Guides</li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> How to develop a custom message passing algorithm</div></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">gmrs book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <p>This book contains usage examples and guides for <code>gmrs</code> library.
+The library GitHub repo is available via the <a href="https://github.com/LuchnikovI/gmrs">link</a></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="loopy-belief-propagation-sherrington-kirkpatrick-models-free-entropy"><a class="header" href="#loopy-belief-propagation-sherrington-kirkpatrick-models-free-entropy">Loopy belief propagation: Sherrington Kirkpatrick model's free entropy</a></h1>
+<p><em>A complete code of the example is available in</em> <code>./examples/sk.rs</code>.
+<em>Simply run <code>cargo run --release --example sk -- --help</code> to get a manual on a CLI interface of the example</em>. <em>To plot the figures from this page, simply execute a python script <code>./examples/sk_plotter.py</code></em>.</p>
+<p>In this example we calculate a free entropy of a Sherrington Kirkpatrick (SK) model by a loopy belief propagation algorithm for a replica symmetric phase. The free entropy is one of the most important thermodynamic potentials that determines physical properties of a system and often is a final goal of an analytical or numerical calculations. First, we need to remind a reader what the SK model and the free entropy are. Let \( \mathbf{x} \in \{+1,-1\}^N\) be a configuration of \( N \) spins. We define a probability measure over all those configurations as follows \[ p[\mathbf{x}|J, \beta] =  \frac{1}{Z(J, \beta)}\exp\left\{\sum_{i&gt;j} \beta J_{ij}x_ix_j\right\},\] where \(x_i\) is the \( i\)-th entry of \( \mathbf{x} \), \( Z(J, \beta) \) is the partition function (normalization constant), \( \beta \) is the inverse temperature and \( J_{ij} \) is an element of a coupling constants matrix \( J \). Coupling constants are i.i.d. random variables, each of them is sampled from the normal distribution \( {\cal N}\left(0, \frac{1}{\sqrt{N}}\right) \). As one can see, \( p[\mathbf{x}|J, \beta] \) is a Gibbs measure describing a spin system with Ising like coupling of all \(\frac{N(1 - N)}{2}\) pairs of spins. We would be interested in averaged over \( J \) free entropy of the SK model, that reads \[\langle\Phi(\beta)\rangle = \sqrt{\frac{N}{2\pi}}^{\frac{N(N-1)}{2}}\int\prod_{i&gt;j} dJ_{ij}\exp\left(-\frac{N}{2}\sum_{i&gt;j}J_{ij}^2\right)\log(p[\mathbf{x}|J, \beta]).\] SK model is exactly solvable in the thermodynamic limit (\( N\to\infty\)). For \( 0 &lt; \beta &lt; 1 \) (high temperatures) the SK model is in the replica symmetric phase and its exact free entropy takes the following form \[\langle\Phi(\beta)\rangle = \frac{\beta^2}{4} + \log(2).\] \( \beta = 1\) is the phase transition point where replica symmetry breaks. For \(\beta &gt; 1\) we do not discuss the SK model behaviour in order to simplify the discussion and since the belief propagation algorithm does not converge in this region. For further understanding of the analytical approach to the SK model and some other spin glass models we refer the reader to p. 143-164 of <a href="https://web.stanford.edu/~montanar/RESEARCH/BOOK/partB.pdf">Part B</a> of <a href="https://web.stanford.edu/~montanar/RESEARCH/book.html">Information, Physics, and Computation book</a> by Marc Mézard and Andrea Montanari.</p>
+<p>We are going to calculate the free entropy numerically, using the loopy belief propagation algorithm. One useful property of the SK model is <em>self-averaging</em> which states that the thermodynamic properties of \( p[\mathbf{x}|J, \beta] \) are identical for all \( J \) sampled from \( {\cal N}\left(0, \frac{1}{\sqrt{N}}\right) \). This allows us to calculate the free entropy value for a single sample of \( J \) and it would coincide with averaged value with high precision given \( N \) is sufficiently large.</p>
+<p>Now let us turn to the code, <code>gmrs</code> library contains an implementation of a factor graph for Ising type models. Each factor in this graph is an exponent of the following kind \[ \psi_{J, b_1, b_2}(x_1, x_2) = \exp(Jx_1x_2 + b_1 x_1 + b_2 x_2),\] where \( J \) is a coupling constant, \( b_1 \) is a magnetic field acting on the first spin and \( b_2 \) is a magnetic field acting on the second spin. One can build a sample of the SK model unnormalized probability measure from these factors as follows: \[ p[\mathbf{x}|J, \beta]\propto\prod_{i&gt;j} \psi_{\beta J_{ij}, 0,0}(x_i, x_j),\] where \( J_{ij} \) is sampled using a random numbers generator. Let us implement this factor graph in code. First, let us bring to the scope all the necessary objects:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use gmrs::{
+    ising::{new_ising_builder, random_message_initializer, IsingFactor, SumProduct},
+    ising::schedulers::{get_standard_factor_scheduler, get_standard_variable_scheduler},
+};
+use rand::thread_rng;
+use rand_distr::{Distribution, Normal};
+<span class="boring">}</span></code></pre></pre>
+<p>Here <code>new_ising_builder</code> is a function returning builder object for an Ising factor graph, <code>random_message_initializer</code> is a function that creates an <code>initializer</code> for initial values of messages, <code>IsingFactor</code> is an Ising factor data type, <code>SumProduct</code> is a message passing type and <code>get_standard_factor_scheduler</code> and <code>get_standard_variable_scheduler</code> are functions returning objects for scheduling algorithm's hyper-parameters during the belief propagation runtime. All other object are necessary for generating couplings and initial values of messages at random.</p>
+<p>Next, we define parameters of a problem:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// number of spins in SK model
+let spins_number = 1000;
+// inverse temperature
+let beta = 0.9;
+// threshold of the convergence criterion
+let error = 1e-6;
+// maximal number of message passing iterations
+let max_iter = 1000;
+// mean value of coupling constants
+let mu = 0f64;
+// std of coupling constants
+let std = beta / (spins_number as f64).sqrt();
+// distribution of coupling constants
+let distr = Normal::new(mu, std).unwrap();
+// a scheduler for factor's messages update rules
+let factor_scheduler = get_standard_factor_scheduler(0.5);
+// a scheduler for variable's messages update rules
+let variable_scheduler = get_standard_variable_scheduler(0.5);
+// this generator is used to sample coupling constants
+let mut rng_couplings = thread_rng();
+// messages initializer
+let mut initializer = random_message_initializer(thread_rng(), -0.5, 0.5);
+<span class="boring">}</span></code></pre></pre>
+<p>All the parameters are self-explanatory, except <code>factor_scheduler</code>, <code>variable_scheduler</code> and <code>initializer</code>. <code>factor_scheduler</code> and <code>variable_scheduler</code> are schedulers that return hyper-parameters of the belief propagation algorithm given the current iteration number. In the particular case they simply return an <a href="https://en.wikipedia.org/wiki/Exponential_smoothing">exponential smoothing parameter</a> for messages' updates equal to <code>0.5</code> for any iteration. <code>initializer</code> is just an object that randomly initializes messages at the start of the algorithm.</p>
+<p>Now we are ready to build a factor graph:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut fgb =
+        new_ising_builder::&lt;SumProduct&gt;(spins_number, (spins_number - 1) * spins_number / 2);
+    for i in 0..spins_number {
+        for j in (i + 1)..spins_number {
+            fgb.add_factor(
+                IsingFactor::new(distr.sample(&amp;mut rng_couplings), 0f64, 0f64),
+                &amp;[i, j],
+                &amp;mut initializer,
+            )
+            .unwrap();
+        }
+    }
+    let mut fg = fgb.build();
+<span class="boring">}</span></code></pre></pre>
+<p>Here first we create a factor graph with <code>spins_number</code> variables and memory allocated for <code>(spins_number - 1) * spins_number / 2</code> factors. Then, in two <code>for</code> loops we connect each two variables by an Ising factor with random coupling constant, one can check that this loop is in one-to-one correspondence with the formula for the probability measure \( p[\mathbf{x}|J, \beta]\propto\prod_{i&gt;j} \psi_{\beta J_{ij}, 0,0}(x_i, x_j)\). Finally, by the <code>.build()</code> method we create a factor graph from a builder.</p>
+<p>Now we are ready to run the message passing and print its convergence info:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let info = fg
+    .run_message_passing_parallel(
+        max_iter,
+        0,  // minimal number of iterations
+        error,
+        &amp;factor_scheduler,
+        &amp;variable_scheduler
+    );
+    .unwrap();
+println!(&quot;{}&quot;, info);
+<span class="boring">}</span></code></pre></pre>
+<p>Readers, who are not well familiar with the loopy belief propagation algorithm we refer to <a href="https://web.stanford.edu/~montanar/RESEARCH/BOOK/partD.pdf">Part D</a> of <a href="https://web.stanford.edu/~montanar/RESEARCH/book.html">Information, Physics, and Computation book</a>.</p>
+<p>After the convergence of the algorithm we can compute all the single- and two-spins approximate marginal distributions, i.e. \[p[x_i|J, \beta] = \int \prod_{k\neq x_i} dx_k p[\mathbf{x}|J, \beta], \\ p[x_i, x_j|J, \beta] = \int \prod_{k\neq x_i, x_j} dx_k p[\mathbf{x}|J, \beta],\] by calling the following methods</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let variable_marginals = fg.variable_marginals();
+let factor_marginals = fg.factor_marginals();
+<span class="boring">}</span></code></pre></pre>
+<p>Here <code>variable_marginals</code> is a vector of <code>Array1</code> objects from <a href="https://docs.rs/ndarray/latest/ndarray/"><code>ndarray</code> carte</a> for each variable (spin), each array is \( p[x_i|J, \beta] \) distribution for a particular variable. <code>factor_marginals</code> is a vector of <code>Array2</code> objects for each factor, each array is \( p[x_i, x_j|J, \beta] \) distribution of a particular factor.</p>
+<p>We also can get all the factors as <code>Array2</code> objects as follows</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let factors = fg.factors();
+<span class="boring">}</span></code></pre></pre>
+<p>Here <code>factors</code> is a vector of <code>Array2</code> objects, each array is a particular factor \(\psi_{\beta J_{ij}, 0,0}(x_i, x_j)\).</p>
+<p>Having all the marginal distributions \(p[x_i|J, \beta]\), \(p[x_i, x_j|J, \beta]\) and factors \(\psi_{\beta J_{ij}, 0,0}(x_i, x_j)\) we can calculate a Bethe free-entropy per spin as follows \[\small{F(\beta) = \frac{1}{N}\left((N - 2)\sum_i \sum_{x_i} p[x_i|J, \beta] \log(p[x_i|J, \beta])-\sum_{i&gt;j} \sum_{x_i, x_j} p[x_i, x_j|J, \beta]\log\left[\frac{p[x_i, x_j|J, \beta]}{\psi_{\beta J_{ij}, 0,0}(x_i, x_j)}\right]\right)},\] in code it takes the following form</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let mut bethe_free_entropy = 0f64;
+for (fm, f) in factor_marginals.iter().zip(&amp;factors) {
+    bethe_free_entropy -= (fm * (fm / f).mapv(f64::ln)).sum();
+}
+for vm in &amp;variable_marginals {
+    bethe_free_entropy += ((spins_number - 2) as f64) * (vm * vm.mapv(f64::ln)).sum();
+}
+bethe_free_entropy /= spins_number as f64;
+<span class="boring">}</span></code></pre></pre>
+<p>The Bethe free entropy is not equal to the free entropy in general case, but in our case, where interaction graph is fully connected, the Bethe free entropy is a very good approximation of the free entropy. We are going to compare the Bethe free entropy with the exact free entropy for Replica symmetric phase. Exact free entropy for this phase can be computed by calling the following function</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Returns a replica symmetric free entropy
+/// (valid for high temperature, beta &lt; 1)
+fn rs_sk_free_entropy(beta: f64) -&gt; f64 {
+    0.25 * beta.powi(2) + f64::ln(2f64)
+}
+<span class="boring">}</span></code></pre></pre>
+<p>Then, we can plot the comparison for different <code>beta</code> and also plot some other important metrics of the belief propagation algorithm in order to see how the algorithm converges for different values of <code>beta</code>. You can get the same plots by calling the plotting script <code>./examples/sk_plotter.py</code>. Plots are given below</p>
+<p><img src="guide/../images/sk_plots.svg" alt="sk_plots" /></p>
+<p>The vertical black line in all plots highlights the replica symmetry breaking phase transition point. The top plot shows the number of message passing iterations passed until convergence. One can note, that after the symmetry breaking point the algorithm performs the maximal number of iteration and does not converge. The middle plot shows the discrepancy between subsequent messages for the last and one prior to the last iterations. For the converged algorithm this discrepancy is equal to machine zero, but as one can see, for the broken symmetry region it is finite that is another evidence that algorithm has not converged. The bottom plot shows the Bethe free entropy (red dots) and the exact free entropy for Replica symmetric phase (blue curve). One can note, that the Bethe free entropy coincides with the exact free entropy for the replica symmetric phase. For broken replica symmetry both curves have no sense since the analytical one is valid only for the symmetric phase and the belief propagation does not converge in the symmetry brocken phase.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            MathJax.Hub.Register.StartupHook('End', function() {
+                window.setTimeout(window.print, 100);
+            });
+        });
+        </script>
+
+    </div>
+    </body>
+</html>
