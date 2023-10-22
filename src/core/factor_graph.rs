@@ -588,11 +588,11 @@ where
         };
         let receivers_len = variable_node.receivers.len();
         let receivers_cap = variable_node.receivers.capacity();
-        factor_node.receivers.push(message);
-        factor_node.messages.push(message);
+        factor_node.receivers.push(message.clone());
+        factor_node.messages.push(message.clone());
         factor_node.var_node_indices.push(var_index);
         factor_node.var_node_receiver_indices.push(receivers_len);
-        variable_node.receivers.push(message);
+        variable_node.receivers.push(message.clone());
         factor_node
             .senders
             .push(variable_node.receivers.last_mut().unwrap());

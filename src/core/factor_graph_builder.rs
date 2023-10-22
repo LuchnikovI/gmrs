@@ -206,8 +206,8 @@ where
             let factor_message = message_initializer();
             let variable_message = message_initializer();
             last_factor.senders.push(null_mut());
-            last_factor.receivers.push(factor_message);
-            last_factor.messages.push(variable_message);
+            last_factor.receivers.push(factor_message.clone());
+            last_factor.messages.push(variable_message.clone());
             last_factor.var_node_indices.push(*index);
             variable.senders.push(null_mut());
             variable.messages.push(factor_message);

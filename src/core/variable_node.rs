@@ -86,7 +86,7 @@ where
     #[inline(always)]
     pub(super) fn send_messages(&mut self) {
         for (msg, dst_ptr) in self.messages.iter().zip(&mut self.senders) {
-            unsafe { **dst_ptr = *msg }
+            unsafe { (*msg).memcpy(&mut **dst_ptr) }
         }
     }
 
