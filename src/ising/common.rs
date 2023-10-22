@@ -248,6 +248,27 @@ where
 #[derive(Debug, Clone, Copy)]
 pub struct IsingVariable<T: IsingMessagePassingType>(PhantomData<T>);
 
+impl<T: IsingMessagePassingType> IsingVariable<T> {
+    /// Creates a new variable.
+    ///
+    /// # Example
+    /// ```
+    /// use gmrs::ising::{IsingVariable, SumProduct};
+    ///
+    /// let var = IsingVariable::<SumProduct>::new();
+    /// ```
+    #[inline]
+    pub fn new() -> Self {
+        IsingVariable(PhantomData)
+    }
+}
+
+impl<T: IsingMessagePassingType> Default for IsingVariable<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> Variable for IsingVariable<T>
 where
     T: IsingMessagePassingType + Clone + Debug + Send,
@@ -256,11 +277,6 @@ where
     type Marginal = Array1<f64>;
     type Parameters = f64;
     type Sample = i8;
-
-    #[inline(always)]
-    fn new() -> Self {
-        IsingVariable(PhantomData)
-    }
 
     #[inline(always)]
     fn send_messages(&self, src: &[Self::Message], dst: &mut [Self::Message], parameters: &f64) {
@@ -300,23 +316,15 @@ where
 /// # Arguments
 ///
 /// * `variables_number` - A number of variables
-/// * `factors_capacity` - A number of factors
+/// * `factors_capacity` - A number of factors used to preallocate memory
 ///
 /// # Example
 /// ```
 /// use rand::thread_rng;
-/// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct, random_message_initializer};
-/// use gmrs::core::FactorGraphBuilder;
+/// use gmrs::ising::new_ising_builder;
+/// use gmrs::ising::SumProduct;
 ///
-/// // Aliases to shorten types
-/// type Factor = IsingFactor<SumProduct>;
-/// type Variable = IsingVariable<SumProduct>;
-///
-/// // Messages initializer
-/// let rng = thread_rng();
-/// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
-///
-/// let fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+/// let fgb = new_ising_builder::<SumProduct>(10, 5);
 /// ```
 pub fn new_ising_builder<T>(
     variables_number: usize,
@@ -325,7 +333,9 @@ pub fn new_ising_builder<T>(
 where
     T: IsingMessagePassingType + Clone + Debug + Send,
 {
-    FactorGraphBuilder::new_with_variables(variables_number, factors_capacity)
+    let mut fgb = FactorGraphBuilder::new_with_capacity(variables_number, factors_capacity);
+    fgb.fill(IsingVariable::new());
+    fgb
 }
 
 /// Crates a new random Ising message initializer.

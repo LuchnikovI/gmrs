@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, iter::from_fn, ptr::null_mut};
+use std::{error::Error, fmt::Display, ptr::null_mut};
 
 use crate::{
     core::factor::Factor, core::factor_graph::FactorGraph, core::factor_node::FactorNode,
@@ -91,13 +91,12 @@ where
         }
     }
 
-    /// Creates a factor graph with predefined set of variables and
-    /// preallocated memory for factors
+    /// Creates a factor graph with preallocated memory for variables and factors
     ///
     /// # Arguments
     ///
-    /// * `variables_number` - A number of variables
-    /// * `factors_capacity` - A number of factors we need to preallocate memory for
+    /// * `variables_capacity` - A number of variables
+    /// * `factors_capacity` - A number of factors
     ///
     /// # Example
     ///
@@ -109,18 +108,21 @@ where
     /// type Factor = IsingFactor<SumProduct>;
     /// type Variable = IsingVariable<SumProduct>;
     ///
-    /// let fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 2);
+    /// let fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 2);
     /// ```
     #[inline]
-    pub fn new_with_variables(variables_number: usize, factors_capacity: usize) -> Self {
-        let variables: Vec<_> = from_fn(|| Some(VariableNode::new_disconnected()))
-            .take(variables_number)
-            .collect();
+    pub fn new_with_capacity(variables_capacity: usize, factors_capacity: usize) -> Self {
+        let variables = Vec::with_capacity(variables_capacity);
         let factors = Vec::with_capacity(factors_capacity);
         FactorGraphBuilder { factors, variables }
     }
 
-    /// Adds a variable to a factor graph
+    /// Fills a vector of variables of a factor graph by a given variable
+    /// till the vector capacity expires.
+    ///
+    /// # Arguments
+    ///
+    /// * `variable` -  A variable
     ///
     /// # Example
     ///
@@ -132,12 +134,43 @@ where
     /// type Factor = IsingFactor<SumProduct>;
     /// type Variable = IsingVariable<SumProduct>;
     ///
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(0, 1);
-    /// fgb.add_variable();
+    /// // Builder creation
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(10, 1);
+    /// fgb.fill(IsingVariable::new());
     /// ```
     #[inline]
-    pub fn add_variable(&mut self) {
-        self.variables.push(VariableNode::new_disconnected())
+    pub fn fill(&mut self, variable: V) {
+        let capacity = self.variables.capacity();
+        let length = self.variables.len();
+        for _ in 0..(capacity - length) {
+            self.variables
+                .push(VariableNode::new_disconnected(variable.clone()))
+        }
+    }
+
+    /// Adds a variable to a factor graph
+    ///
+    /// # Arguments
+    ///
+    /// * `variable` -  A variable to add
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use gmrs::core::FactorGraphBuilder;
+    /// use gmrs::ising::{IsingFactor, IsingVariable, SumProduct};
+    ///
+    /// // Aliases to shorten types
+    /// type Factor = IsingFactor<SumProduct>;
+    /// type Variable = IsingVariable<SumProduct>;
+    ///
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(0, 1);
+    /// fgb.add_variable(IsingVariable::new());
+    /// ```
+    #[inline]
+    pub fn add_variable(&mut self, variable: V) {
+        self.variables
+            .push(VariableNode::new_disconnected(variable))
     }
 
     /// Adds a factor to a factor graph
@@ -166,7 +199,8 @@ where
     /// type Variable = IsingVariable<SumProduct>;
     ///
     /// // Builder creation
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(10, 1);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(10, 1);
+    /// fgb.fill(IsingVariable::new());
     ///
     /// // Messages initializer
     /// let rng = thread_rng();
@@ -239,7 +273,8 @@ where
     /// type Variable = IsingVariable<SumProduct>;
     ///
     /// // Builder creation
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(10, 9);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(10, 9);
+    /// fgb.fill(IsingVariable::new());
     ///
     /// // Messages initializer
     /// let rng = thread_rng();

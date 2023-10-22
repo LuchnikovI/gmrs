@@ -32,8 +32,7 @@ where
     F: Factor<Message = V::Message>,
 {
     #[inline(always)]
-    pub(super) fn new_disconnected() -> Self {
-        let variable = V::new();
+    pub(super) fn new_disconnected(variable: V) -> Self {
         VariableNode {
             variable,
             fac_node_indices: Vec::new(),

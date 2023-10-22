@@ -60,11 +60,6 @@ impl Variable for FakeVariable {
     type Parameters = ();
 
     #[inline(always)]
-    fn new() -> Self {
-        FakeVariable
-    }
-
-    #[inline(always)]
     fn send_messages(&self, _: &[Self::Message], _: &mut [Self::Message], _: &()) {
         unimplemented!()
     }
@@ -91,7 +86,8 @@ impl Variable for FakeVariable {
 fn small_factor_graph_builder_logic() {
     let mut rng = thread_rng();
     let mut mesage_initializer = || FakeMessage(rng.sample(Uniform::new(usize::MIN, usize::MAX)));
-    let mut fgb = FactorGraphBuilder::<FakeFactor, FakeVariable>::new_with_variables(4, 3);
+    let mut fgb = FactorGraphBuilder::<FakeFactor, FakeVariable>::new_with_capacity(4, 3);
+    fgb.fill(FakeVariable);
     fgb.add_factor(FakeFactor(3), &[0, 1, 3], &mut mesage_initializer)
         .unwrap();
     fgb.add_factor(FakeFactor(2), &[1, 2], &mut mesage_initializer)
@@ -104,10 +100,10 @@ fn small_factor_graph_builder_logic() {
     fg1.freeze_variable(&2, 2).unwrap();
     fg1.freeze_variable(&3, 3).unwrap();
     fgb = FactorGraphBuilder::<FakeFactor, FakeVariable>::new();
-    fgb.add_variable();
-    fgb.add_variable();
-    fgb.add_variable();
-    fgb.add_variable();
+    fgb.add_variable(FakeVariable);
+    fgb.add_variable(FakeVariable);
+    fgb.add_variable(FakeVariable);
+    fgb.add_variable(FakeVariable);
     fgb.add_factor(FakeFactor(3), &[0, 1, 3], &mut mesage_initializer)
         .unwrap();
     fgb.add_factor(FakeFactor(2), &[1, 2], &mut mesage_initializer)

@@ -14,9 +14,6 @@ pub trait Variable: Clone + Debug + Send {
     /// Type representing a variable sample
     type Sample: Copy;
 
-    /// Create a new variable instance
-    fn new() -> Self;
-
     /// Sends messages to adjoint factors
     ///
     /// # Arguments

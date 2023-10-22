@@ -170,7 +170,8 @@ where
     /// let rng = thread_rng();
     /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 1);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
     ///    &[0, 1],
@@ -202,7 +203,8 @@ where
     /// let rng = thread_rng();
     /// let mut initializer = random_message_initializer(rng, -0.5, 0.5);
     ///
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 1);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, -0.5f64, 0.5f64),
     ///    &[0, 1],
@@ -257,7 +259,8 @@ where
     /// let variable_scheduler = get_standard_variable_scheduler(0.5);
     ///
     /// // Message passing
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(4, 3);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(4, 3);
+    /// fgb.fill(IsingVariable::new());
     /// for i in 0..3 {
     ///     fgb.add_factor(
     ///         IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
@@ -349,7 +352,8 @@ where
     /// let variable_scheduler = get_standard_variable_scheduler(0.5);
     ///
     /// // Message passing
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 1);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
     ///    &[0, 1],
@@ -403,7 +407,8 @@ where
     /// let variable_scheduler = get_standard_variable_scheduler(0.5);
     ///
     /// // Message passing
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 1);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
     ///    &[0, 1],
@@ -470,7 +475,8 @@ where
     /// let variable_scheduler = get_standard_variable_scheduler(0.5);
     ///
     /// // Message passing
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 1);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 1);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
     ///    &[0, 1],
@@ -539,7 +545,8 @@ where
     /// let variable_scheduler = get_standard_variable_scheduler(0.);
     ///
     /// // Message passing
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 2);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 2);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
     ///    &[0, 1],
@@ -668,7 +675,8 @@ where
     /// let variable_scheduler = get_standard_variable_scheduler(0.);
     ///
     /// // Message passing
-    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_variables(2, 2);
+    /// let mut fgb = FactorGraphBuilder::<Factor, Variable>::new_with_capacity(2, 2);
+    /// fgb.fill(IsingVariable::new());
     /// fgb.add_factor(
     ///     IsingFactor::new(0.5f64, 0.5f64, -0.5f64),
     ///    &[0, 1],
